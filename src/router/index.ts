@@ -31,6 +31,40 @@ const router = createRouter({
       component: () => import('@/views/publico/VerificarView.vue'),
       meta: { soloInvitados: true },
     },
+    {
+      path: '/empresas/registro',
+      name: 'registro-empresa',
+      component: () => import('@/views/publico/RegistroEmpresaView.vue'),
+      meta: { soloInvitados: true },
+    },
+    {
+      path: '/empresa/ofertas',
+      name: 'mis-ofertas',
+      component: () => import('@/views/empresa/MisOfertasView.vue'),
+      meta: { roles: ['EMPRESA'] },
+    },
+    {
+      path: '/empresa/ofertas/nueva',
+      component: () => import('@/views/empresa/OfertaFormView.vue'),
+      meta: { roles: ['EMPRESA'] },
+    },
+    {
+      path: '/empresa/ofertas/:id/editar',
+      component: () => import('@/views/empresa/OfertaFormView.vue'),
+      meta: { roles: ['EMPRESA'] },
+    },
+    {
+      path: '/admin/empresas',
+      name: 'admin-empresas',
+      component: () => import('@/views/admin/EmpresasView.vue'),
+      meta: { roles: ['SUPERADMIN'] },
+    },
+    {
+      path: '/admin/ofertas',
+      name: 'admin-ofertas',
+      component: () => import('@/views/admin/OfertasRevisionView.vue'),
+      meta: { roles: ['SUPERADMIN'] },
+    },
   ],
 })
 

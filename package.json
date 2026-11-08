@@ -16,7 +16,6 @@
     "lucide-vue-next": "^1.0.0",
     "ofetch": "^1.5.1",
     "pinia": "^4.0.3",
-    "reka-ui": "^2.11.0",
     "vue": "^3.5.42",
     "vue-chartjs": "^5.3.4",
     "vue-router": "^5.3.1"

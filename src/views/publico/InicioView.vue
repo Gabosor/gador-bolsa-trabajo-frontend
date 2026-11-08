@@ -13,5 +13,8 @@
     >
       Crear mi cuenta
     </RouterLink>
+    <RouterLink to="/empresas/registro" class="mt-4 block font-medium text-guinda-700 underline">
+      Soy una empresa y quiero publicar ofertas
+    </RouterLink>
   </section>
 </template>
