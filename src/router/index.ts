@@ -81,6 +81,21 @@ const router = createRouter({
       meta: { roles: ['EMPRESA'] },
     },
     {
+      path: '/empresa/ofertas/:id/postulantes',
+      component: () => import('@/views/empresa/PostulantesOfertaView.vue'),
+      meta: { roles: ['EMPRESA'] },
+    },
+    {
+      path: '/notificaciones',
+      component: () => import('@/views/NotificacionesView.vue'),
+      meta: { roles: ['SUPERADMIN', 'EMPRESA', 'POSTULANTE'] },
+    },
+    {
+      path: '/cuenta',
+      component: () => import('@/views/CuentaView.vue'),
+      meta: { roles: ['SUPERADMIN', 'EMPRESA', 'POSTULANTE'] },
+    },
+    {
       path: '/admin/empresas',
       name: 'admin-empresas',
       component: () => import('@/views/admin/EmpresasView.vue'),

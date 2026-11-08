@@ -52,6 +52,8 @@ function salir() {
           <RouterLink to="/admin/ofertas" class="flex min-h-11 items-center px-3 whitespace-nowrap" active-class="text-guinda-700 underline">Revisión de ofertas</RouterLink>
         </template>
         <RouterLink v-else to="/empresa/ofertas" class="flex min-h-11 items-center px-3 whitespace-nowrap" active-class="text-guinda-700 underline">Mis ofertas</RouterLink>
+        <RouterLink to="/notificaciones" class="flex min-h-11 items-center px-3 whitespace-nowrap" active-class="text-guinda-700 underline">Notificaciones</RouterLink>
+        <RouterLink to="/cuenta" class="flex min-h-11 items-center px-3 whitespace-nowrap" active-class="text-guinda-700 underline">Cuenta</RouterLink>
       </div>
     </nav>
 
