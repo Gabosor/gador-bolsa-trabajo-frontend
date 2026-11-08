@@ -105,6 +105,9 @@ onMounted(cargar)
                   <AccionBoton @click="cambiar(o, 'EN_REVISION_GADOR')">Enviar a revisión</AccionBoton>
                   <AccionBoton @click="eliminar(o)">Eliminar</AccionBoton>
                 </template>
+                <AccionBoton v-if="o.estado !== 'BORRADOR' && o.estado !== 'EN_REVISION_GADOR'" @click="router.push(`/empresa/ofertas/${o.id}/postulantes`)">
+                  Postulantes
+                </AccionBoton>
                 <AccionBoton v-if="o.estado === 'PUBLICADA'" @click="cambiar(o, 'EN_PROCESO_SELECCION')">
                   Iniciar selección
                 </AccionBoton>
