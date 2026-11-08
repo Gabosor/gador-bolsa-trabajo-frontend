@@ -20,7 +20,7 @@ async function enviar() {
   cargando.value = true
   try {
     await auth.login(email.value, password.value)
-    const paneles = { SUPERADMIN: '/admin/empresas', EMPRESA: '/empresa/ofertas', POSTULANTE: '/' }
+    const paneles = { SUPERADMIN: '/admin/empresas', EMPRESA: '/empresa/ofertas', POSTULANTE: '/ofertas' }
     const volver = route.query.volver
     await router.push(typeof volver === 'string' ? volver : paneles[auth.usuario!.rol])
   } catch (e) {
@@ -45,7 +45,10 @@ async function enviar() {
       <p v-if="error" role="alert" class="text-sm text-red-700">{{ error }}</p>
       <BaseButton :cargando="cargando">Ingresar</BaseButton>
     </form>
-    <p class="mt-4 text-sm">
+    <RouterLink to="/olvide" class="mt-4 inline-block text-sm font-medium text-guinda-700 underline">
+      Olvidé mi contraseña
+    </RouterLink>
+    <p class="mt-2 text-sm">
       ¿Aún no tienes cuenta?
       <RouterLink to="/registro" class="font-medium text-guinda-700 underline">Regístrate</RouterLink>
     </p>
