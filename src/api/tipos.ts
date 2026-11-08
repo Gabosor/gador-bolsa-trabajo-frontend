@@ -8,6 +8,52 @@ export interface Paginado<T> {
   meta: { page: number; limit: number; total: number; totalPages: number }
 }
 
+export interface Formacion {
+  id: number
+  profesion: ItemCatalogo
+  institucion: string
+  anioTitulacion: number
+  nroTituloNacional: string
+}
+
+export interface Experiencia {
+  id: number
+  empresa: string
+  cargo: string
+  anios: number
+  descripcion: string
+}
+
+export interface Perfil {
+  id: number
+  user: { nombreCompleto: string; email: string; ci: string; celular: string }
+  direccion: string | null
+  fechaNacimiento: string | null
+  idiomas: { nombre: string; nivel: string }[]
+  porcentajeCompletitud: number
+  fotoUrl: string | null
+  cvUrl: string | null
+  formaciones: Formacion[]
+  experiencias: Experiencia[]
+  habilidades: { habilidad: ItemCatalogo; nivel: number }[]
+}
+
+export interface Postulacion {
+  id: number
+  estado: string
+  porcentajeMatch: number
+  createdAt: string
+  oferta: {
+    id: number
+    titulo: string
+    estado: EstadoOferta
+    fechaCierre: string
+    descripcion: string
+    requisitosObligatorios: string
+    empresa: { razonSocial: string }
+  }
+}
+
 export type EstadoEmpresa = 'PENDIENTE_VALIDACION' | 'APROBADA' | 'RECHAZADA' | 'SUSPENDIDA'
 
 export interface Empresa {

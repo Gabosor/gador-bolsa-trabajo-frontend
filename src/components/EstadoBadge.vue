@@ -14,6 +14,13 @@ const ESTILOS: Record<string, { texto: string; clase: string }> = {
   EN_PROCESO_SELECCION: { texto: 'En selección', clase: 'bg-blue-100 text-blue-900' },
   CERRADA: { texto: 'Cerrada', clase: 'bg-stone-200 text-stone-900' },
   ANULADA: { texto: 'Anulada', clase: 'bg-red-100 text-red-900' },
+  POSTULADO: { texto: 'Postulado', clase: 'bg-stone-200 text-stone-900' },
+  VISTO: { texto: 'Visto por la empresa', clase: 'bg-blue-100 text-blue-900' },
+  PRESELECCIONADO: { texto: 'Preseleccionado', clase: 'bg-blue-100 text-blue-900' },
+  ENTREVISTA: { texto: 'Entrevista', clase: 'bg-amber-100 text-amber-900' },
+  FINALISTA: { texto: 'Finalista', clase: 'bg-amber-100 text-amber-900' },
+  CONTRATADO: { texto: 'Contratado', clase: 'bg-green-100 text-green-900' },
+  RECHAZADO: { texto: 'No seleccionado', clase: 'bg-red-100 text-red-900' },
 }
 
 const estilo = computed(

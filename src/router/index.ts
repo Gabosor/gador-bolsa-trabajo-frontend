@@ -31,6 +31,33 @@ const router = createRouter({
       component: () => import('@/views/publico/VerificarView.vue'),
       meta: { soloInvitados: true },
     },
+    { path: '/ofertas', name: 'ofertas', component: () => import('@/views/publico/BuscadorView.vue') },
+    { path: '/ofertas/:id', component: () => import('@/views/publico/OfertaDetalleView.vue') },
+    {
+      path: '/olvide',
+      component: () => import('@/views/publico/OlvideView.vue'),
+      meta: { soloInvitados: true },
+    },
+    {
+      path: '/restablecer',
+      component: () => import('@/views/publico/RestablecerView.vue'),
+      meta: { soloInvitados: true },
+    },
+    {
+      path: '/perfil',
+      component: () => import('@/views/postulante/PerfilView.vue'),
+      meta: { roles: ['POSTULANTE'] },
+    },
+    {
+      path: '/postulaciones',
+      component: () => import('@/views/postulante/PostulacionesView.vue'),
+      meta: { roles: ['POSTULANTE'] },
+    },
+    {
+      path: '/favoritos',
+      component: () => import('@/views/postulante/FavoritosView.vue'),
+      meta: { roles: ['POSTULANTE'] },
+    },
     {
       path: '/empresas/registro',
       name: 'registro-empresa',

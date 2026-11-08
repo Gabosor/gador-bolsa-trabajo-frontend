@@ -39,9 +39,15 @@ function salir() {
       </div>
     </header>
 
-    <nav v-if="auth.usuario && auth.usuario.rol !== 'POSTULANTE'" class="border-b border-stone-200 bg-white">
+    <nav v-if="auth.usuario" class="border-b border-stone-200 bg-white">
       <div class="mx-auto flex max-w-6xl gap-1 overflow-x-auto px-4 text-sm font-medium">
-        <template v-if="auth.usuario.rol === 'SUPERADMIN'">
+        <template v-if="auth.usuario.rol === 'POSTULANTE'">
+          <RouterLink to="/ofertas" class="flex min-h-11 items-center px-3 whitespace-nowrap" active-class="text-guinda-700 underline">Ofertas</RouterLink>
+          <RouterLink to="/perfil" class="flex min-h-11 items-center px-3 whitespace-nowrap" active-class="text-guinda-700 underline">Mi perfil</RouterLink>
+          <RouterLink to="/postulaciones" class="flex min-h-11 items-center px-3 whitespace-nowrap" active-class="text-guinda-700 underline">Postulaciones</RouterLink>
+          <RouterLink to="/favoritos" class="flex min-h-11 items-center px-3 whitespace-nowrap" active-class="text-guinda-700 underline">Favoritos</RouterLink>
+        </template>
+        <template v-else-if="auth.usuario.rol === 'SUPERADMIN'">
           <RouterLink to="/admin/empresas" class="flex min-h-11 items-center px-3 whitespace-nowrap" active-class="text-guinda-700 underline">Empresas</RouterLink>
           <RouterLink to="/admin/ofertas" class="flex min-h-11 items-center px-3 whitespace-nowrap" active-class="text-guinda-700 underline">Revisión de ofertas</RouterLink>
         </template>
