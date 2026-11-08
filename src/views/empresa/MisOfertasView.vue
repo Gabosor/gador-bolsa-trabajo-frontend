@@ -77,7 +77,8 @@ onMounted(cargar)
     <p v-if="error" role="alert" class="mb-4 text-sm text-red-700">{{ error }}</p>
     <p v-if="ofertas.length === 0 && !error" class="text-stone-700">Todavía no tienes ofertas.</p>
 
-    <div v-else class="overflow-x-auto rounded-md border border-stone-200 bg-white">
+    <p v-if="ofertas.length > 0" class="mb-2 text-xs text-stone-600 sm:hidden">Desliza la tabla para ver las acciones.</p>
+    <div v-if="ofertas.length > 0" class="overflow-x-auto rounded-md border border-stone-200 bg-white">
       <table class="w-full min-w-[720px] text-left text-sm">
         <thead class="bg-stone-100">
           <tr>
