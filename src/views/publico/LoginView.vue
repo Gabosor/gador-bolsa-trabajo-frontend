@@ -20,7 +20,7 @@ async function enviar() {
   cargando.value = true
   try {
     await auth.login(email.value, password.value)
-    const paneles = { SUPERADMIN: '/admin/empresas', EMPRESA: '/empresa/ofertas', POSTULANTE: '/ofertas' }
+    const paneles = { SUPERADMIN: '/admin/panel', EMPRESA: '/empresa/ofertas', POSTULANTE: '/ofertas' }
     const volver = route.query.volver
     await router.push(typeof volver === 'string' ? volver : paneles[auth.usuario!.rol])
   } catch (e) {

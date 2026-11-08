@@ -96,6 +96,26 @@ const router = createRouter({
       meta: { roles: ['SUPERADMIN', 'EMPRESA', 'POSTULANTE'] },
     },
     {
+      path: '/admin/panel',
+      component: () => import('@/views/admin/DashboardView.vue'),
+      meta: { roles: ['SUPERADMIN'] },
+    },
+    {
+      path: '/admin/reportes',
+      component: () => import('@/views/admin/ReportesView.vue'),
+      meta: { roles: ['SUPERADMIN'] },
+    },
+    {
+      path: '/admin/catalogos',
+      component: () => import('@/views/admin/CatalogosView.vue'),
+      meta: { roles: ['SUPERADMIN'] },
+    },
+    {
+      path: '/admin/auditoria',
+      component: () => import('@/views/admin/AuditoriaView.vue'),
+      meta: { roles: ['SUPERADMIN'] },
+    },
+    {
       path: '/admin/empresas',
       name: 'admin-empresas',
       component: () => import('@/views/admin/EmpresasView.vue'),

@@ -48,8 +48,12 @@ function salir() {
           <RouterLink to="/favoritos" class="flex min-h-11 items-center px-3 whitespace-nowrap" active-class="text-guinda-700 underline">Favoritos</RouterLink>
         </template>
         <template v-else-if="auth.usuario.rol === 'SUPERADMIN'">
+          <RouterLink to="/admin/panel" class="flex min-h-11 items-center px-3 whitespace-nowrap" active-class="text-guinda-700 underline">Panel</RouterLink>
           <RouterLink to="/admin/empresas" class="flex min-h-11 items-center px-3 whitespace-nowrap" active-class="text-guinda-700 underline">Empresas</RouterLink>
           <RouterLink to="/admin/ofertas" class="flex min-h-11 items-center px-3 whitespace-nowrap" active-class="text-guinda-700 underline">Revisión de ofertas</RouterLink>
+          <RouterLink to="/admin/reportes" class="flex min-h-11 items-center px-3 whitespace-nowrap" active-class="text-guinda-700 underline">Reportes</RouterLink>
+          <RouterLink to="/admin/catalogos" class="flex min-h-11 items-center px-3 whitespace-nowrap" active-class="text-guinda-700 underline">Catálogos</RouterLink>
+          <RouterLink to="/admin/auditoria" class="flex min-h-11 items-center px-3 whitespace-nowrap" active-class="text-guinda-700 underline">Auditoría</RouterLink>
         </template>
         <RouterLink v-else to="/empresa/ofertas" class="flex min-h-11 items-center px-3 whitespace-nowrap" active-class="text-guinda-700 underline">Mis ofertas</RouterLink>
         <RouterLink to="/notificaciones" class="flex min-h-11 items-center px-3 whitespace-nowrap" active-class="text-guinda-700 underline">Notificaciones</RouterLink>
