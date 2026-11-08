@@ -20,7 +20,9 @@ async function enviar() {
   cargando.value = true
   try {
     await auth.login(email.value, password.value)
-    await router.push(typeof route.query.volver === 'string' ? route.query.volver : '/')
+    const paneles = { SUPERADMIN: '/admin/empresas', EMPRESA: '/empresa/ofertas', POSTULANTE: '/' }
+    const volver = route.query.volver
+    await router.push(typeof volver === 'string' ? volver : paneles[auth.usuario!.rol])
   } catch (e) {
     const mensaje = mensajeError(e)
     if (mensaje === 'Debes verificar tu celular') {
