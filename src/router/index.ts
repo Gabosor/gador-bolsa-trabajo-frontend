@@ -134,6 +134,18 @@ const router = createRouter({
       component: () => import('@/views/admin/OfertasRevisionView.vue'),
       meta: { roles: ['SUPERADMIN'] },
     },
+    {
+      path: '/admin/empresas/:id(\\d+)',
+      name: 'admin-empresa',
+      component: () => import('@/views/admin/RevisarEmpresaView.vue'),
+      meta: { roles: ['SUPERADMIN'] },
+    },
+    {
+      path: '/admin/ofertas/:id(\\d+)',
+      name: 'admin-oferta',
+      component: () => import('@/views/admin/RevisarOfertaView.vue'),
+      meta: { roles: ['SUPERADMIN'] },
+    },
   ],
 })
 

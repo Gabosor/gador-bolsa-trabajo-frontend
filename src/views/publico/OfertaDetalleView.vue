@@ -23,7 +23,9 @@ import BaseButton from '@/components/BaseButton.vue'
 import Esqueleto from '@/components/Esqueleto.vue'
 import EstadoBadge from '@/components/EstadoBadge.vue'
 import EstadoVacio from '@/components/EstadoVacio.vue'
+import LogoEmpresa from '@/components/LogoEmpresa.vue'
 import TarjetaOferta from '@/components/TarjetaOferta.vue'
+import TextoFormateado from '@/components/TextoFormateado.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useAvisosStore } from '@/stores/avisos'
 import { useInteraccionesStore } from '@/stores/interacciones'
@@ -101,9 +103,12 @@ async function compartir() {
 
     <header class="plano p-4">
       <div class="flex items-start justify-between gap-2">
-        <div class="min-w-0">
-          <h1 class="titulo-pagina break-words">{{ oferta.titulo }}</h1>
-          <p class="mt-1 text-lg">{{ oferta.empresa?.razonSocial }}</p>
+        <div class="flex min-w-0 items-start gap-3">
+          <LogoEmpresa v-if="oferta.empresa" :nombre="oferta.empresa.razonSocial" :url="oferta.empresa.logoUrl" />
+          <div class="min-w-0">
+            <h1 class="titulo-pagina break-words">{{ oferta.titulo }}</h1>
+            <p class="mt-1 text-lg">{{ oferta.empresa?.razonSocial }}</p>
+          </div>
         </div>
         <div class="flex shrink-0">
           <button type="button" class="flex size-11 items-center justify-center rounded-full hover:bg-salar" aria-label="Compartir oferta" @click="compartir">
@@ -131,9 +136,9 @@ async function compartir() {
     </header>
 
     <div class="plano mt-3 space-y-5 p-4">
-      <div><h2 class="mb-1 text-xl font-bold">Descripción</h2><p class="break-words whitespace-pre-line">{{ oferta.descripcion }}</p></div>
-      <div><h2 class="mb-1 text-xl font-bold">Requisitos obligatorios</h2><p class="break-words whitespace-pre-line">{{ oferta.requisitosObligatorios }}</p></div>
-      <div v-if="oferta.requisitosDeseables"><h2 class="mb-1 text-xl font-bold">Requisitos deseables</h2><p class="break-words whitespace-pre-line">{{ oferta.requisitosDeseables }}</p></div>
+      <div><h2 class="mb-1 text-xl font-bold">Descripción</h2><TextoFormateado :texto="oferta.descripcion" /></div>
+      <div><h2 class="mb-1 text-xl font-bold">Requisitos obligatorios</h2><TextoFormateado :texto="oferta.requisitosObligatorios" /></div>
+      <div v-if="oferta.requisitosDeseables"><h2 class="mb-1 text-xl font-bold">Requisitos deseables</h2><TextoFormateado :texto="oferta.requisitosDeseables" /></div>
 
       <div v-if="oferta.habilidades.length">
         <h2 class="mb-2 text-xl font-bold">Habilidades</h2>
@@ -150,8 +155,8 @@ async function compartir() {
       </div>
 
       <div><h2 class="mb-1 text-xl font-bold">Profesiones</h2><p>{{ oferta.profesiones.map((p) => p.nombre).join(', ') }}</p></div>
-      <div v-if="oferta.beneficios"><h2 class="mb-1 text-xl font-bold">Beneficios</h2><p class="break-words whitespace-pre-line">{{ oferta.beneficios }}</p></div>
-      <div v-if="oferta.empresa"><h2 class="mb-1 text-xl font-bold">Sobre la empresa</h2><p class="break-words whitespace-pre-line">{{ oferta.empresa.descripcion }}</p></div>
+      <div v-if="oferta.beneficios"><h2 class="mb-1 text-xl font-bold">Beneficios</h2><TextoFormateado :texto="oferta.beneficios" /></div>
+      <div v-if="oferta.empresa"><h2 class="mb-1 text-xl font-bold">Sobre la empresa</h2><TextoFormateado :texto="oferta.empresa.descripcion" /></div>
     </div>
 
     <div v-if="similares.length" class="mt-6">
