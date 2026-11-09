@@ -21,5 +21,8 @@ export const api = ofetch.create({
 export function mensajeError(error: unknown): string {
   const message = (error as { data?: { message?: string | string[] } }).data?.message
   if (Array.isArray(message)) return message.join('. ')
-  return message ?? 'No se pudo conectar con el servidor. Intenta de nuevo.'
+  if (message) return message
+  return navigator.onLine
+    ? 'No se pudo conectar con el servidor. Intenta de nuevo.'
+    : 'No tienes conexión a internet. Revisa tu red e intenta de nuevo.'
 }

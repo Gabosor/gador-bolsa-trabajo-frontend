@@ -6,6 +6,8 @@ import AccionBoton from '@/components/AccionBoton.vue'
 import BaseButton from '@/components/BaseButton.vue'
 import BaseInput from '@/components/BaseInput.vue'
 import BaseSelect from '@/components/BaseSelect.vue'
+import { useAvisosStore } from '@/stores/avisos'
+import { pedirTexto } from '@/utils/confirmar'
 
 interface Item {
   id: number
@@ -30,21 +32,18 @@ const departamentos = ref<ItemCatalogo[]>([])
 const nombre = ref('')
 const parentId = ref<number | ''>('')
 const limite = ref('5')
-const error = ref('')
-const aviso = ref('')
+const avisos = useAvisosStore()
 
 const esHabilidad = computed(() => tipo.value === 'HABILIDAD')
 const esMunicipio = computed(() => tipo.value === 'MUNICIPIO')
 
 /** Ejecuta una acción y muestra su error, sin repetir el try/catch. */
 async function ejecutar(accion: () => Promise<unknown>, mensaje = '') {
-  error.value = ''
-  aviso.value = ''
   try {
     await accion()
-    aviso.value = mensaje
+    if (mensaje) avisos.exito(mensaje)
   } catch (e) {
-    error.value = mensajeError(e)
+    avisos.error(mensajeError(e))
   }
 }
 
@@ -75,8 +74,12 @@ function agregar() {
   }, 'Registro agregado')
 }
 
-function renombrar(item: Item) {
-  const nuevo = prompt('Nuevo nombre', item.nombre)?.trim()
+async function renombrar(item: Item) {
+  const nuevo = await pedirTexto({
+    titulo: 'Renombrar',
+    accion: 'Guardar',
+    campo: { etiqueta: 'Nuevo nombre', valor: item.nombre },
+  })
   if (!nuevo || nuevo === item.nombre) return
   ejecutar(async () => {
     await api(ruta(item.id), { method: 'PATCH', body: { nombre: nuevo } })
@@ -102,10 +105,7 @@ function guardarLimite() {
   )
 }
 
-watch(tipo, () => {
-  aviso.value = ''
-  ejecutar(cargar)
-})
+watch(tipo, () => ejecutar(cargar))
 
 onMounted(() =>
   ejecutar(async () => {
@@ -122,11 +122,9 @@ onMounted(() =>
 
 <template>
   <section class="mx-auto max-w-3xl">
-    <h1 class="mb-4 text-2xl font-semibold text-guinda-900">Catálogos y configuración</h1>
-    <p v-if="aviso" role="status" class="mb-4 rounded-md bg-green-100 p-3 text-sm text-green-900">{{ aviso }}</p>
-    <p v-if="error" role="alert" class="mb-4 text-sm text-red-700">{{ error }}</p>
+    <h1 class="titulo-pagina mb-3">Catálogos y configuración</h1>
 
-    <form class="mb-6 flex flex-wrap items-end gap-3 rounded-md border border-stone-200 bg-white p-4" @submit.prevent="guardarLimite">
+    <form class="plano mb-6 flex flex-wrap items-end gap-3 p-4" @submit.prevent="guardarLimite">
       <div class="w-full sm:w-64">
         <BaseInput v-model="limite" label="Límite de ofertas activas por empresa" type="number" min="1" />
       </div>
@@ -134,8 +132,8 @@ onMounted(() =>
     </form>
 
     <label class="mb-4 block">
-      <span class="mb-1 block text-sm font-medium">Catálogo</span>
-      <select v-model="tipo" class="min-h-11 w-full rounded-md border border-stone-400 bg-white px-3">
+      <span class="mb-1 block font-semibold">Catálogo</span>
+      <select v-model="tipo" class="campo">
         <option v-for="t in TIPOS" :key="t.valor" :value="t.valor">{{ t.texto }}</option>
       </select>
     </label>
@@ -148,12 +146,12 @@ onMounted(() =>
       <div class="w-full sm:w-32"><BaseButton>Agregar</BaseButton></div>
     </form>
 
-    <ul class="divide-y divide-stone-200 rounded-md border border-stone-200 bg-white">
+    <ul class="plano divide-y divide-linea">
       <li v-for="i in items" :key="i.id" class="flex flex-wrap items-center justify-between gap-2 p-3">
         <div class="min-w-0">
-          <span class="break-words" :class="{ 'text-stone-500 line-through': !i.activo }">{{ i.nombre }}</span>
-          <span v-if="i.parent" class="ml-2 text-xs text-stone-600">{{ i.parent.nombre }}</span>
-          <span v-if="!i.activo" class="ml-2 text-xs text-stone-600">Inactivo</span>
+          <span class="break-words" :class="{ 'text-roca line-through': !i.activo }">{{ i.nombre }}</span>
+          <span v-if="i.parent" class="ml-2 text-base text-roca">{{ i.parent.nombre }}</span>
+          <span v-if="!i.activo" class="ml-2 text-base text-roca">Inactivo</span>
         </div>
         <div class="flex gap-2">
           <AccionBoton @click="renombrar(i)">Renombrar</AccionBoton>

@@ -16,11 +16,20 @@ self.addEventListener('push', (evento) => {
     self.registration.showNotification(datos.titulo ?? 'Bolsa de Trabajo GADOR', {
       body: datos.mensaje,
       icon: '/icons/icon-192.png',
+      data: { url: datos.url ?? '/notificaciones' },
     }),
   )
 })
 
+// Lleva a la pantalla del aviso, reutilizando la app si ya está abierta.
 self.addEventListener('notificationclick', (evento) => {
   evento.notification.close()
-  evento.waitUntil(self.clients.openWindow('/notificaciones'))
+  const url = evento.notification.data?.url ?? '/notificaciones'
+  evento.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((ventanas) => {
+      const abierta = ventanas[0]
+      if (abierta) return abierta.focus().then(() => abierta.navigate(url))
+      return self.clients.openWindow(url)
+    }),
+  )
 })

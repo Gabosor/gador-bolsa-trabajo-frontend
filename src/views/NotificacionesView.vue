@@ -1,27 +1,35 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
+import { BellOff, BellRing } from 'lucide-vue-next'
 import { api, mensajeError } from '@/api'
 import { activarNotificacionesPush } from '@/api/push'
 import AccionBoton from '@/components/AccionBoton.vue'
+import Esqueleto from '@/components/Esqueleto.vue'
+import EstadoVacio from '@/components/EstadoVacio.vue'
+import { useAvisosStore } from '@/stores/avisos'
+import { useNotificacionesStore, type Notificacion } from '@/stores/notificaciones'
+import { fechaHora } from '@/utils/formato'
 
-interface Notificacion {
-  id: number
-  titulo: string
-  mensaje: string
-  leida: boolean
-  createdAt: string
-}
-
+const avisos = useAvisosStore()
+const contador = useNotificacionesStore()
 const notificaciones = ref<Notificacion[]>([])
 const error = ref('')
-const aviso = ref('')
 const cargada = ref(false)
+
+const esHoy = (valor: string) => new Date(valor).toDateString() === new Date().toDateString()
+const grupos = computed(() =>
+  [
+    { titulo: 'Hoy', items: notificaciones.value.filter((n) => esHoy(n.createdAt)) },
+    { titulo: 'Anteriores', items: notificaciones.value.filter((n) => !esHoy(n.createdAt)) },
+  ].filter((g) => g.items.length),
+)
 
 async function cargar() {
   try {
     notificaciones.value = await api<Notificacion[]>('/notificaciones')
     if (notificaciones.value.some((n) => !n.leida)) {
       await api('/notificaciones/leidas', { method: 'PATCH' })
+      contador.sinLeer = 0
     }
   } catch (e) {
     error.value = mensajeError(e)
@@ -31,13 +39,11 @@ async function cargar() {
 }
 
 async function activar() {
-  error.value = ''
-  aviso.value = ''
   try {
     await activarNotificacionesPush()
-    aviso.value = 'Notificaciones activadas en este dispositivo'
+    avisos.exito('Notificaciones activadas en este dispositivo')
   } catch (e) {
-    error.value = e instanceof Error && !('data' in e) ? e.message : mensajeError(e)
+    avisos.error(e instanceof Error && !('data' in e) ? e.message : mensajeError(e))
   }
 }
 
@@ -46,22 +52,26 @@ onMounted(cargar)
 
 <template>
   <section class="mx-auto max-w-2xl">
-    <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-      <h1 class="text-2xl font-semibold text-guinda-900">Notificaciones</h1>
-      <AccionBoton @click="activar">Activar en este dispositivo</AccionBoton>
+    <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
+      <h1 class="titulo-pagina">Notificaciones</h1>
+      <AccionBoton @click="activar"><BellRing class="size-5" aria-hidden="true" />Activar avisos</AccionBoton>
     </div>
-    <p v-if="aviso" role="status" class="mb-4 rounded-md bg-green-100 p-3 text-sm text-green-900">{{ aviso }}</p>
-    <p v-if="error" role="alert" class="mb-4 text-sm text-red-700">{{ error }}</p>
-    <p v-if="cargada && notificaciones.length === 0 && !error" class="text-stone-700">No tienes notificaciones.</p>
-    <ul class="space-y-2">
-      <li v-for="n in notificaciones" :key="n.id" class="rounded-md border border-stone-200 bg-white p-3" :class="{ 'border-l-4 border-l-guinda-700': !n.leida }">
-        <p class="font-medium">
-          {{ n.titulo }}
-          <span v-if="!n.leida" class="ml-1 text-xs font-normal text-guinda-700">Nueva</span>
-        </p>
-        <p class="text-sm break-words">{{ n.mensaje }}</p>
-        <p class="mt-1 text-xs text-stone-600">{{ new Date(n.createdAt).toLocaleString('es-BO') }}</p>
-      </li>
-    </ul>
+    <p v-if="error" role="alert" class="mb-4 text-error">{{ error }}</p>
+    <Esqueleto v-if="!cargada" />
+    <EstadoVacio v-else-if="notificaciones.length === 0 && !error" :icono="BellOff" titulo="No tienes notificaciones" texto="Aquí verás los cambios en tus postulaciones y ofertas." />
+
+    <div v-for="g in grupos" :key="g.titulo" class="mb-4">
+      <h2 class="mb-1.5 text-lg font-bold">{{ g.titulo }}</h2>
+      <ul class="plano divide-y divide-linea overflow-hidden">
+        <li v-for="n in g.items" :key="n.id" class="flex gap-3 p-3" :class="{ 'bg-guinda-50': !n.leida }">
+          <span class="mt-2 size-2.5 shrink-0 rounded-full" :class="n.leida ? 'bg-transparent' : 'bg-guinda-700'" />
+          <div class="min-w-0">
+            <p class="font-semibold">{{ n.titulo }}<span v-if="!n.leida" class="sr-only"> (nueva)</span></p>
+            <p class="break-words">{{ n.mensaje }}</p>
+            <p class="mt-0.5 text-base text-roca">{{ fechaHora(n.createdAt) }}</p>
+          </div>
+        </li>
+      </ul>
+    </div>
   </section>
 </template>

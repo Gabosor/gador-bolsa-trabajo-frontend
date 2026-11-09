@@ -31,11 +31,19 @@ export interface Perfil {
   fechaNacimiento: string | null
   idiomas: { nombre: string; nivel: string }[]
   porcentajeCompletitud: number
+  pendientes?: { clave: string; texto: string; puntos: number }[]
   fotoUrl: string | null
   cvUrl: string | null
   formaciones: Formacion[]
   experiencias: Experiencia[]
   habilidades: { habilidad: ItemCatalogo; nivel: number }[]
+}
+
+export interface Compatibilidad {
+  porcentaje: number
+  porcentajePerfil: number
+  puedePostular: boolean
+  habilidades: { habilidadId: number; nivelPropio: number | null; cumple: boolean }[]
 }
 
 export interface Postulacion {

@@ -10,9 +10,14 @@ import {
   Tooltip,
 } from 'chart.js'
 import { Bar, Pie } from 'vue-chartjs'
+import { ChevronRight } from 'lucide-vue-next'
 import { api, mensajeError } from '@/api'
+import Esqueleto from '@/components/Esqueleto.vue'
 
 ChartJS.register(ArcElement, BarElement, CategoryScale, LinearScale, Legend, Tooltip)
+ChartJS.defaults.font.family = "'Atkinson Hyperlegible Next Variable', sans-serif"
+ChartJS.defaults.font.size = 14
+ChartJS.defaults.color = '#5c6670'
 
 interface Conteo {
   nombre: string
@@ -125,7 +130,7 @@ const datosRubro = computed(() => ({
 }))
 
 const ejes = {
-  grid: { color: '#e7e5e4' },
+  grid: { color: '#d9dee2' },
   border: { display: false },
   beginAtZero: true,
   ticks: { precision: 0 },
@@ -140,27 +145,37 @@ const opcionesProfesion = { ...base, plugins: { legend: { position: 'bottom' as 
 
 <template>
   <section>
-    <h1 class="mb-1 text-2xl font-semibold text-guinda-900">Panel GADOR</h1>
-    <p class="mb-4 text-sm text-stone-600">Se actualiza cada 30 segundos.</p>
-    <p v-if="error" role="alert" class="mb-4 text-sm text-red-700">{{ error }}</p>
+    <h1 class="titulo-pagina">Panel GADOR</h1>
+    <p class="mb-4 text-roca">Se actualiza cada 30 segundos.</p>
+    <p v-if="error" role="alert" class="mb-4 text-error">{{ error }}</p>
 
+    <Esqueleto v-if="!resumen && !error" />
     <div v-if="resumen" class="space-y-6">
-      <div class="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <div v-for="t in tarjetas" :key="t.texto" class="rounded-md border border-stone-200 bg-white p-4">
-          <p class="text-sm text-stone-600">{{ t.texto }}</p>
-          <p class="text-2xl font-semibold tabular-nums">{{ t.valor }}</p>
-          <p v-if="t.ayuda" class="text-xs text-stone-600">{{ t.ayuda }}</p>
-        </div>
-      </div>
+      <RouterLink
+        v-if="resumen.empresasPendientes"
+        to="/admin/empresas"
+        class="flex min-h-12 items-center justify-between gap-3 rounded-campo bg-alerta-50 p-3 font-semibold text-alerta"
+      >
+        {{ resumen.empresasPendientes }} {{ resumen.empresasPendientes === 1 ? 'empresa espera' : 'empresas esperan' }} validación
+        <ChevronRight class="size-5 shrink-0" aria-hidden="true" />
+      </RouterLink>
 
-      <div class="rounded-md border border-stone-200 bg-white p-4">
-        <h2 class="mb-3 font-semibold">Postulaciones por mes</h2>
+      <dl class="plano grid grid-cols-2 gap-px overflow-hidden bg-linea md:grid-cols-4">
+        <div v-for="t in tarjetas" :key="t.texto" class="bg-white p-4 last:col-span-2">
+          <dt class="text-roca">{{ t.texto }}</dt>
+          <dd class="font-titulo text-[2rem] leading-tight font-bold text-guinda-900 tabular-nums">{{ t.valor }}</dd>
+          <dd v-if="t.ayuda" class="text-base text-roca">{{ t.ayuda }}</dd>
+        </div>
+      </dl>
+
+      <div class="plano p-4">
+        <h2 class="mb-3 text-xl font-bold">Postulaciones por mes</h2>
         <div class="relative h-64"><Bar :data="datosMes" :options="opcionesMes" aria-label="Gráfico de barras de postulaciones por mes" /></div>
         <details class="mt-3 text-sm">
           <summary class="cursor-pointer font-medium">Ver como tabla</summary>
           <table class="mt-2 w-full">
             <tbody>
-              <tr v-for="m in resumen.postulacionesPorMes" :key="m.mes" class="border-t border-stone-200">
+              <tr v-for="m in resumen.postulacionesPorMes" :key="m.mes" class="border-t border-linea">
                 <td class="py-1">{{ nombreMes(m.mes) }}</td>
                 <td class="py-1 text-right tabular-nums">{{ m.total }}</td>
               </tr>
@@ -170,14 +185,14 @@ const opcionesProfesion = { ...base, plugins: { legend: { position: 'bottom' as 
       </div>
 
       <div class="grid gap-6 lg:grid-cols-2">
-        <div class="rounded-md border border-stone-200 bg-white p-4">
-          <h2 class="mb-3 font-semibold">Postulantes por profesión</h2>
+        <div class="plano p-4">
+          <h2 class="mb-3 text-xl font-bold">Postulantes por profesión</h2>
           <div class="relative h-80"><Pie :data="datosProfesion" :options="opcionesProfesion" aria-label="Gráfico de torta de postulantes por profesión" /></div>
           <details class="mt-3 text-sm">
             <summary class="cursor-pointer font-medium">Ver como tabla</summary>
             <table class="mt-2 w-full">
               <tbody>
-                <tr v-for="p in profesiones" :key="p.nombre" class="border-t border-stone-200">
+                <tr v-for="p in profesiones" :key="p.nombre" class="border-t border-linea">
                   <td class="py-1">{{ p.nombre }}</td>
                   <td class="py-1 text-right tabular-nums">{{ p.total }}</td>
                 </tr>
@@ -186,14 +201,14 @@ const opcionesProfesion = { ...base, plugins: { legend: { position: 'bottom' as 
           </details>
         </div>
 
-        <div class="rounded-md border border-stone-200 bg-white p-4">
-          <h2 class="mb-3 font-semibold">Empresas por rubro</h2>
+        <div class="plano p-4">
+          <h2 class="mb-3 text-xl font-bold">Empresas por rubro</h2>
           <div class="relative h-80"><Bar :data="datosRubro" :options="opcionesRubro" aria-label="Gráfico de barras de empresas por rubro" /></div>
           <details class="mt-3 text-sm">
             <summary class="cursor-pointer font-medium">Ver como tabla</summary>
             <table class="mt-2 w-full">
               <tbody>
-                <tr v-for="r in resumen.empresasPorRubro" :key="r.nombre" class="border-t border-stone-200">
+                <tr v-for="r in resumen.empresasPorRubro" :key="r.nombre" class="border-t border-linea">
                   <td class="py-1">{{ r.nombre }}</td>
                   <td class="py-1 text-right tabular-nums">{{ r.total }}</td>
                 </tr>

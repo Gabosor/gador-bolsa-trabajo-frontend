@@ -1,6 +1,12 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore, type Rol } from '@/stores/auth'
 
+export const PANEL_DE_ROL: Record<Rol, string> = {
+  SUPERADMIN: '/admin/panel',
+  EMPRESA: '/empresa/ofertas',
+  POSTULANTE: '/ofertas',
+}
+
 declare module 'vue-router' {
   interface RouteMeta {
     /** Si se define, la ruta exige sesión con uno de estos roles. */
@@ -11,6 +17,7 @@ declare module 'vue-router' {
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
+  scrollBehavior: (_to, _from, guardada) => guardada ?? { top: 0 },
   routes: [
     { path: '/', name: 'inicio', component: () => import('@/views/publico/InicioView.vue') },
     {
@@ -133,10 +140,11 @@ const router = createRouter({
 router.beforeEach(async (to) => {
   const auth = useAuthStore()
   await auth.iniciar()
-  if (to.meta.soloInvitados && auth.autenticado) return { name: 'inicio' }
+  // Con sesión, la app abre directamente en la pantalla de trabajo de cada rol.
+  if ((to.meta.soloInvitados || to.name === 'inicio') && auth.usuario) return PANEL_DE_ROL[auth.usuario.rol]
   if (to.meta.roles) {
     if (!auth.usuario) return { name: 'login', query: { volver: to.fullPath } }
-    if (!to.meta.roles.includes(auth.usuario.rol)) return { name: 'inicio' }
+    if (!to.meta.roles.includes(auth.usuario.rol)) return PANEL_DE_ROL[auth.usuario.rol]
   }
 })
 

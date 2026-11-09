@@ -2,8 +2,10 @@
 import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { mensajeError } from '@/api'
+import AccesoMarco from '@/components/AccesoMarco.vue'
 import BaseButton from '@/components/BaseButton.vue'
 import BaseInput from '@/components/BaseInput.vue'
+import { PANEL_DE_ROL } from '@/router'
 import { useAuthStore } from '@/stores/auth'
 
 const auth = useAuthStore()
@@ -20,9 +22,8 @@ async function enviar() {
   cargando.value = true
   try {
     await auth.login(email.value, password.value)
-    const paneles = { SUPERADMIN: '/admin/panel', EMPRESA: '/empresa/ofertas', POSTULANTE: '/ofertas' }
     const volver = route.query.volver
-    await router.push(typeof volver === 'string' ? volver : paneles[auth.usuario!.rol])
+    await router.push(typeof volver === 'string' ? volver : PANEL_DE_ROL[auth.usuario!.rol])
   } catch (e) {
     const mensaje = mensajeError(e)
     if (mensaje === 'Debes verificar tu celular') {
@@ -37,20 +38,19 @@ async function enviar() {
 </script>
 
 <template>
-  <section class="mx-auto max-w-sm">
-    <h1 class="mb-6 text-2xl font-semibold text-guinda-900">Ingresar</h1>
+  <AccesoMarco titulo="Ingresar">
     <form class="space-y-4" @submit.prevent="enviar">
-      <BaseInput v-model="email" label="Correo electrónico" type="email" autocomplete="email" />
-      <BaseInput v-model="password" label="Contraseña" type="password" autocomplete="current-password" />
-      <p v-if="error" role="alert" class="text-sm text-red-700">{{ error }}</p>
-      <BaseButton :cargando="cargando">Ingresar</BaseButton>
+      <BaseInput v-model="email" label="Correo electrónico" type="email" inputmode="email" autocomplete="email" />
+      <div>
+        <BaseInput v-model="password" label="Contraseña" type="password" autocomplete="current-password" />
+        <RouterLink to="/olvide" class="enlace inline-flex min-h-11 items-center">Olvidé mi contraseña</RouterLink>
+      </div>
+      <p v-if="error" role="alert" class="text-error">{{ error }}</p>
+      <BaseButton :cargando="cargando" texto-cargando="Ingresando…">Ingresar</BaseButton>
     </form>
-    <RouterLink to="/olvide" class="mt-4 inline-block text-sm font-medium text-guinda-700 underline">
-      Olvidé mi contraseña
-    </RouterLink>
-    <p class="mt-2 text-sm">
-      ¿Aún no tienes cuenta?
-      <RouterLink to="/registro" class="font-medium text-guinda-700 underline">Regístrate</RouterLink>
-    </p>
-  </section>
+    <template #pie>
+      <p>¿Aún no tienes cuenta? <RouterLink to="/registro" class="enlace">Regístrate</RouterLink></p>
+      <p class="mt-2">¿Representas a una empresa? <RouterLink to="/empresas/registro" class="enlace">Regístrala</RouterLink></p>
+    </template>
+  </AccesoMarco>
 </template>

@@ -3,7 +3,7 @@
 Aplicación web instalable de la Gobernación de Oruro para postulantes, empresas y administradores.
 
 **Stack:** Vue 3, TypeScript, Vite, Tailwind CSS, Pinia, Vue Router, `vite-plugin-pwa`.
-**API:** repositorio aparte (`backend`), que también contiene la documentación completa del sistema.
+**API:** repositorio aparte (`backend`). La documentación técnica del sistema se entrega por separado.
 
 ## Requisitos
 
@@ -37,9 +37,10 @@ Todo `VITE_*` llega al navegador: aquí solo van valores públicos.
 ```
 src/
   api/          cliente HTTP, tipos y notificaciones push
-  stores/       sesión (Pinia)
+  stores/       sesión, avisos, interacciones y notificaciones (Pinia)
   router/       rutas protegidas por rol
   components/   componentes reutilizables
+  utils/        formato de datos y diálogo de confirmación
   views/        publico, postulante, empresa, admin
   sw.js         service worker: caché y notificaciones
 ```
@@ -47,3 +48,16 @@ src/
 ## Producción
 
 El `Dockerfile` compila la app y la sirve con nginx. `VITE_API_URL` y `VITE_VAPID_PUBLIC_KEY` se pasan como argumentos de construcción, porque Vite los escribe en el código al compilar.
+
+## APK para Android
+
+El APK es una Trusted Web Activity: empaqueta esta misma PWA y conserva el service worker y las notificaciones push. Necesita la app publicada en un dominio HTTPS, JDK 17 y Android SDK.
+
+```sh
+npm i -g @bubblewrap/cli
+bubblewrap init --manifest https://TU-DOMINIO/manifest.webmanifest
+bubblewrap build
+bubblewrap fingerprint generateAssetLinks
+```
+
+Copia el `assetlinks.json` generado a `public/.well-known/` y vuelve a desplegar: sin ese archivo Android muestra la barra del navegador. La llave de firma (`android.keystore`) y sus contraseñas nunca se suben al repositorio.

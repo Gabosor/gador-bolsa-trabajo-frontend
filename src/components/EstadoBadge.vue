@@ -1,35 +1,48 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, type Component } from 'vue'
+import { Ban, CheckCircle2, Circle, Clock3, Eye, Star } from 'lucide-vue-next'
 
 const props = defineProps<{ estado: string }>()
 
-const ESTILOS: Record<string, { texto: string; clase: string }> = {
-  PENDIENTE_VALIDACION: { texto: 'Pendiente', clase: 'bg-amber-100 text-amber-900' },
-  APROBADA: { texto: 'Aprobada', clase: 'bg-green-100 text-green-900' },
-  RECHAZADA: { texto: 'Rechazada', clase: 'bg-red-100 text-red-900' },
-  SUSPENDIDA: { texto: 'Suspendida', clase: 'bg-red-100 text-red-900' },
-  BORRADOR: { texto: 'Borrador', clase: 'bg-stone-200 text-stone-900' },
-  EN_REVISION_GADOR: { texto: 'En revisión', clase: 'bg-amber-100 text-amber-900' },
-  PUBLICADA: { texto: 'Publicada', clase: 'bg-green-100 text-green-900' },
-  EN_PROCESO_SELECCION: { texto: 'En selección', clase: 'bg-blue-100 text-blue-900' },
-  CERRADA: { texto: 'Cerrada', clase: 'bg-stone-200 text-stone-900' },
-  ANULADA: { texto: 'Anulada', clase: 'bg-red-100 text-red-900' },
-  POSTULADO: { texto: 'Postulado', clase: 'bg-stone-200 text-stone-900' },
-  VISTO: { texto: 'Visto por la empresa', clase: 'bg-blue-100 text-blue-900' },
-  PRESELECCIONADO: { texto: 'Preseleccionado', clase: 'bg-blue-100 text-blue-900' },
-  ENTREVISTA: { texto: 'Entrevista', clase: 'bg-amber-100 text-amber-900' },
-  FINALISTA: { texto: 'Finalista', clase: 'bg-amber-100 text-amber-900' },
-  CONTRATADO: { texto: 'Contratado', clase: 'bg-green-100 text-green-900' },
-  RECHAZADO: { texto: 'No seleccionado', clase: 'bg-red-100 text-red-900' },
+type Tono = 'neutro' | 'proceso' | 'alerta' | 'exito' | 'error'
+
+const ESTADOS: Record<string, { texto: string; tono: Tono; icono: Component }> = {
+  PENDIENTE_VALIDACION: { texto: 'Pendiente', tono: 'alerta', icono: Clock3 },
+  APROBADA: { texto: 'Aprobada', tono: 'exito', icono: CheckCircle2 },
+  RECHAZADA: { texto: 'Rechazada', tono: 'error', icono: Ban },
+  SUSPENDIDA: { texto: 'Suspendida', tono: 'error', icono: Ban },
+  BORRADOR: { texto: 'Borrador', tono: 'neutro', icono: Circle },
+  EN_REVISION_GADOR: { texto: 'En revisión', tono: 'alerta', icono: Clock3 },
+  PUBLICADA: { texto: 'Publicada', tono: 'exito', icono: CheckCircle2 },
+  EN_PROCESO_SELECCION: { texto: 'En selección', tono: 'proceso', icono: Clock3 },
+  CERRADA: { texto: 'Cerrada', tono: 'neutro', icono: Circle },
+  ANULADA: { texto: 'Anulada', tono: 'error', icono: Ban },
+  POSTULADO: { texto: 'Postulado', tono: 'neutro', icono: Circle },
+  VISTO: { texto: 'Visto por la empresa', tono: 'proceso', icono: Eye },
+  PRESELECCIONADO: { texto: 'Preseleccionado', tono: 'proceso', icono: Star },
+  ENTREVISTA: { texto: 'Entrevista', tono: 'alerta', icono: Clock3 },
+  FINALISTA: { texto: 'Finalista', tono: 'alerta', icono: Star },
+  CONTRATADO: { texto: 'Contratado', tono: 'exito', icono: CheckCircle2 },
+  RECHAZADO: { texto: 'No seleccionado', tono: 'error', icono: Ban },
 }
 
-const estilo = computed(
-  () => ESTILOS[props.estado] ?? { texto: props.estado, clase: 'bg-stone-200 text-stone-900' },
-)
+const TONOS: Record<Tono, string> = {
+  neutro: 'bg-salar text-noche',
+  proceso: 'bg-lago-50 text-lago',
+  alerta: 'bg-alerta-50 text-alerta',
+  exito: 'bg-exito-50 text-exito',
+  error: 'bg-error-50 text-error',
+}
+
+const actual = computed(() => ESTADOS[props.estado] ?? { texto: props.estado, tono: 'neutro' as Tono, icono: Circle })
 </script>
 
 <template>
-  <span class="inline-block rounded-full px-2.5 py-1 text-xs font-medium whitespace-nowrap" :class="estilo.clase">
-    {{ estilo.texto }}
+  <span
+    class="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-sm font-semibold whitespace-nowrap"
+    :class="TONOS[actual.tono]"
+  >
+    <component :is="actual.icono" class="size-3.5" aria-hidden="true" />
+    {{ actual.texto }}
   </span>
 </template>

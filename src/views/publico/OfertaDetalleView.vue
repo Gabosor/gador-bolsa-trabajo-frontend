@@ -1,35 +1,65 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import {
+  ArrowLeft,
+  Banknote,
+  BriefcaseBusiness,
+  CalendarClock,
+  Check,
+  CircleAlert,
+  FileSearch,
+  Heart,
+  MapPin,
+  Minus,
+  Monitor,
+  Share2,
+  Users,
+} from 'lucide-vue-next'
 import { api, mensajeError } from '@/api'
-import type { Oferta } from '@/api/tipos'
+import type { Compatibilidad, Oferta } from '@/api/tipos'
 import AccionBoton from '@/components/AccionBoton.vue'
 import BaseButton from '@/components/BaseButton.vue'
+import Esqueleto from '@/components/Esqueleto.vue'
+import EstadoBadge from '@/components/EstadoBadge.vue'
+import EstadoVacio from '@/components/EstadoVacio.vue'
+import TarjetaOferta from '@/components/TarjetaOferta.vue'
 import { useAuthStore } from '@/stores/auth'
+import { useAvisosStore } from '@/stores/avisos'
+import { useInteraccionesStore } from '@/stores/interacciones'
+import { nombreNivel, plural, salario, textoCierre } from '@/utils/formato'
 
 const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
-const id = route.params.id as string
+const avisos = useAvisosStore()
+const interacciones = useInteraccionesStore()
+const id = Number(route.params.id)
 
 const oferta = ref<Oferta | null>(null)
-const error = ref('')
-const exito = ref('')
-const favorito = ref(false)
+const compatibilidad = ref<Compatibilidad | null>(null)
+const similares = ref<Oferta[]>([])
+const errorCarga = ref('')
+const errorPostular = ref('')
 const cargando = ref(false)
 
 const esPostulante = computed(() => auth.usuario?.rol === 'POSTULANTE')
-const NIVELES = ['', 'Básico', 'Intermedio', 'Avanzado']
+const esInvitado = computed(() => !auth.usuario)
+const guardada = computed(() => interacciones.favoritos.has(id))
+const estadoPostulacion = computed(() => interacciones.postulaciones.get(id))
+
+const cumple = (habilidadId: number) => compatibilidad.value?.habilidades.find((h) => h.habilidadId === habilidadId)
 
 onMounted(async () => {
   try {
     oferta.value = await api<Oferta>(`/ofertas/${id}`)
-    if (esPostulante.value) {
-      const lista = await api<{ oferta: { id: number } }[]>('/postulaciones/favoritos')
-      favorito.value = lista.some((f) => f.oferta.id === Number(id))
-    }
   } catch (e) {
-    error.value = mensajeError(e)
+    errorCarga.value = mensajeError(e)
+    return
+  }
+  api<Oferta[]>(`/ofertas/${id}/similares`).then((r) => (similares.value = r)).catch(() => undefined)
+  if (esPostulante.value) {
+    api<Compatibilidad>(`/postulaciones/compatibilidad/${id}`).then((r) => (compatibilidad.value = r)).catch(() => undefined)
   }
 })
 
@@ -38,72 +68,120 @@ async function postular() {
     await router.push({ name: 'login', query: { volver: route.fullPath } })
     return
   }
-  error.value = ''
+  errorPostular.value = ''
   cargando.value = true
   try {
-    const r = await api<{ porcentajeMatch: number }>(`/postulaciones/oferta/${id}`, { method: 'POST' })
-    exito.value = `Postulación enviada. Tu compatibilidad es de ${r.porcentajeMatch} %.`
+    const r = await api<{ porcentajeMatch: number; estado: string }>(`/postulaciones/oferta/${id}`, { method: 'POST' })
+    interacciones.registrarPostulacion(id, r.estado)
+    avisos.exito(`Postulación enviada. Tu compatibilidad es de ${r.porcentajeMatch} %.`)
   } catch (e) {
-    error.value = mensajeError(e)
+    errorPostular.value = mensajeError(e)
   } finally {
     cargando.value = false
   }
 }
 
-async function alternarFavorito() {
-  error.value = ''
-  try {
-    await api(`/postulaciones/favoritos/${id}`, { method: favorito.value ? 'DELETE' : 'POST' })
-    favorito.value = !favorito.value
-  } catch (e) {
-    error.value = mensajeError(e)
+async function compartir() {
+  if (!oferta.value) return
+  const texto = `${oferta.value.titulo}, en la Bolsa de Trabajo de la Gobernación de Oruro`
+  const url = window.location.href
+  if (navigator.share) {
+    await navigator.share({ title: oferta.value.titulo, text: texto, url }).catch(() => undefined)
+  } else {
+    window.open(`https://wa.me/?text=${encodeURIComponent(`${texto}: ${url}`)}`, '_blank', 'noopener')
   }
 }
 </script>
 
 <template>
-  <section class="mx-auto max-w-3xl">
-    <p v-if="error && !oferta" role="alert" class="text-red-700">{{ error }}</p>
+  <section v-if="oferta" class="mx-auto max-w-3xl pb-24 lg:pb-0">
+    <button type="button" class="enlace mb-3 inline-flex min-h-11 items-center gap-1 no-underline" @click="router.back()">
+      <ArrowLeft class="size-5" aria-hidden="true" />Volver
+    </button>
 
-    <template v-if="oferta">
-      <h1 class="text-2xl font-semibold break-words text-guinda-900">{{ oferta.titulo }}</h1>
-      <p class="mt-1">{{ oferta.empresa?.razonSocial }}</p>
-      <p class="mt-1 text-sm text-stone-600">
-        {{ oferta.municipio.nombre }} · {{ oferta.modalidad.nombre }} · {{ oferta.tipoContrato.nombre }} ·
-        {{ oferta.salarioATratar ? 'Salario a tratar' : `Bs ${oferta.salarioMin} – ${oferta.salarioMax}` }}
-      </p>
-      <p class="mt-1 text-sm text-stone-600">
-        {{ oferta.numeroPlazas }} plaza(s) · {{ oferta.aniosExperiencia }} año(s) de experiencia · Cierra el {{ oferta.fechaCierre }}
-      </p>
-
-      <div v-if="!auth.usuario || esPostulante" class="mt-5 flex flex-col gap-2 sm:flex-row">
-        <div class="sm:w-48"><BaseButton v-if="!exito" type="button" :cargando="cargando" @click="postular">Postular</BaseButton></div>
-        <AccionBoton v-if="esPostulante" @click="alternarFavorito">
-          {{ favorito ? 'Quitar de favoritos' : 'Guardar en favoritos' }}
-        </AccionBoton>
-      </div>
-      <p v-if="exito" role="status" class="mt-3 rounded-md bg-green-100 p-3 text-sm text-green-900">{{ exito }}</p>
-      <p v-if="error" role="alert" class="mt-3 text-sm text-red-700">
-        {{ error }}
-        <RouterLink v-if="error.includes('perfil')" to="/perfil" class="font-medium underline">Completar mi perfil</RouterLink>
-      </p>
-
-      <div class="mt-6 space-y-5">
-        <div><h2 class="mb-1 font-semibold">Descripción</h2><p class="whitespace-pre-line">{{ oferta.descripcion }}</p></div>
-        <div><h2 class="mb-1 font-semibold">Requisitos obligatorios</h2><p class="whitespace-pre-line">{{ oferta.requisitosObligatorios }}</p></div>
-        <div v-if="oferta.requisitosDeseables"><h2 class="mb-1 font-semibold">Requisitos deseables</h2><p class="whitespace-pre-line">{{ oferta.requisitosDeseables }}</p></div>
-        <div>
-          <h2 class="mb-1 font-semibold">Habilidades</h2>
-          <ul class="list-disc pl-5">
-            <li v-for="h in oferta.habilidades" :key="h.habilidad.id">
-              {{ h.habilidad.nombre }}: {{ NIVELES[h.nivelMinimo] }} ({{ h.obligatoria ? 'obligatoria' : 'deseable' }})
-            </li>
-          </ul>
+    <header class="plano p-4">
+      <div class="flex items-start justify-between gap-2">
+        <div class="min-w-0">
+          <h1 class="titulo-pagina break-words">{{ oferta.titulo }}</h1>
+          <p class="mt-1 text-lg">{{ oferta.empresa?.razonSocial }}</p>
         </div>
-        <div><h2 class="mb-1 font-semibold">Profesiones</h2><p>{{ oferta.profesiones.map((p) => p.nombre).join(', ') }}</p></div>
-        <div v-if="oferta.beneficios"><h2 class="mb-1 font-semibold">Beneficios</h2><p class="whitespace-pre-line">{{ oferta.beneficios }}</p></div>
-        <div v-if="oferta.empresa"><h2 class="mb-1 font-semibold">Sobre la empresa</h2><p class="whitespace-pre-line">{{ oferta.empresa.descripcion }}</p></div>
+        <div class="flex shrink-0">
+          <button type="button" class="flex size-11 items-center justify-center rounded-full hover:bg-salar" aria-label="Compartir oferta" @click="compartir">
+            <Share2 class="size-5" aria-hidden="true" />
+          </button>
+          <button v-if="esPostulante" type="button" class="flex size-11 items-center justify-center rounded-full hover:bg-salar" :aria-pressed="guardada" :aria-label="guardada ? 'Quitar de guardadas' : 'Guardar oferta'" @click="interacciones.alternarFavorito(id)">
+            <Heart class="size-6" :class="guardada ? 'fill-oro text-oro' : 'text-roca'" aria-hidden="true" />
+          </button>
+        </div>
       </div>
-    </template>
+
+      <ul class="mt-4 grid gap-x-4 gap-y-2 sm:grid-cols-2">
+        <li class="flex items-center gap-2"><Banknote class="size-5 shrink-0 text-roca" aria-hidden="true" />{{ salario(oferta) }}</li>
+        <li class="flex items-center gap-2"><MapPin class="size-5 shrink-0 text-roca" aria-hidden="true" />{{ oferta.municipio.nombre }}</li>
+        <li class="flex items-center gap-2"><Monitor class="size-5 shrink-0 text-roca" aria-hidden="true" />{{ oferta.modalidad.nombre }}</li>
+        <li class="flex items-center gap-2"><BriefcaseBusiness class="size-5 shrink-0 text-roca" aria-hidden="true" />{{ oferta.tipoContrato.nombre }}, {{ plural(oferta.aniosExperiencia, 'año') }} de experiencia</li>
+        <li class="flex items-center gap-2"><Users class="size-5 shrink-0 text-roca" aria-hidden="true" />{{ plural(oferta.numeroPlazas, 'plaza') }}</li>
+        <li class="flex items-center gap-2"><CalendarClock class="size-5 shrink-0 text-roca" aria-hidden="true" />{{ textoCierre(oferta.fechaCierre) }}</li>
+      </ul>
+
+      <div v-if="compatibilidad && !estadoPostulacion" class="mt-4 flex items-center justify-between gap-3 border-t border-linea pt-3">
+        <p class="font-semibold">Tu compatibilidad con esta oferta</p>
+        <p class="font-titulo text-2xl font-bold text-guinda-900 tabular-nums">{{ compatibilidad.porcentaje }} %</p>
+      </div>
+    </header>
+
+    <div class="plano mt-3 space-y-5 p-4">
+      <div><h2 class="mb-1 text-xl font-bold">Descripción</h2><p class="break-words whitespace-pre-line">{{ oferta.descripcion }}</p></div>
+      <div><h2 class="mb-1 text-xl font-bold">Requisitos obligatorios</h2><p class="break-words whitespace-pre-line">{{ oferta.requisitosObligatorios }}</p></div>
+      <div v-if="oferta.requisitosDeseables"><h2 class="mb-1 text-xl font-bold">Requisitos deseables</h2><p class="break-words whitespace-pre-line">{{ oferta.requisitosDeseables }}</p></div>
+
+      <div v-if="oferta.habilidades.length">
+        <h2 class="mb-2 text-xl font-bold">Habilidades</h2>
+        <ul class="divide-y divide-linea">
+          <li v-for="h in oferta.habilidades" :key="h.habilidad.id" class="flex items-center gap-2 py-2">
+            <template v-if="compatibilidad">
+              <Check v-if="cumple(h.habilidad.id)?.cumple" class="size-5 shrink-0 text-exito" aria-label="Cumples este nivel" />
+              <Minus v-else class="size-5 shrink-0 text-roca" aria-label="No alcanzas este nivel" />
+            </template>
+            <span class="min-w-0 flex-1 break-words font-semibold">{{ h.habilidad.nombre }}</span>
+            <span class="text-right text-base text-roca">{{ nombreNivel(h.nivelMinimo) }}, {{ h.obligatoria ? 'obligatoria' : 'deseable' }}</span>
+          </li>
+        </ul>
+      </div>
+
+      <div><h2 class="mb-1 text-xl font-bold">Profesiones</h2><p>{{ oferta.profesiones.map((p) => p.nombre).join(', ') }}</p></div>
+      <div v-if="oferta.beneficios"><h2 class="mb-1 text-xl font-bold">Beneficios</h2><p class="break-words whitespace-pre-line">{{ oferta.beneficios }}</p></div>
+      <div v-if="oferta.empresa"><h2 class="mb-1 text-xl font-bold">Sobre la empresa</h2><p class="break-words whitespace-pre-line">{{ oferta.empresa.descripcion }}</p></div>
+    </div>
+
+    <div v-if="similares.length" class="mt-6">
+      <h2 class="mb-2 text-xl font-bold">Ofertas parecidas</h2>
+      <ul class="plano divide-y divide-linea overflow-hidden">
+        <li v-for="o in similares" :key="o.id"><TarjetaOferta :oferta="o" /></li>
+      </ul>
+    </div>
+
+    <!-- Acción principal según lo que el postulante puede hacer ahora. -->
+    <div v-if="esInvitado || esPostulante" class="barra-accion lg:mt-4">
+      <div class="mx-auto max-w-3xl">
+        <p v-if="errorPostular" role="alert" class="mb-2 flex items-start gap-1 text-error"><CircleAlert class="mt-0.5 size-4 shrink-0" aria-hidden="true" />{{ errorPostular }}</p>
+        <div v-if="estadoPostulacion" class="flex items-center justify-between gap-3">
+          <EstadoBadge :estado="estadoPostulacion" />
+          <RouterLink to="/postulaciones" class="enlace inline-flex min-h-11 items-center">Ver mis postulaciones</RouterLink>
+        </div>
+        <div v-else-if="compatibilidad && !compatibilidad.puedePostular">
+          <p class="mb-2 text-roca">Tu perfil está al {{ compatibilidad.porcentajePerfil }} %. Necesitas más del 80 % para postular.</p>
+          <RouterLink to="/perfil" class="flex min-h-12 items-center justify-center rounded-campo bg-guinda-700 font-semibold text-white hover:bg-guinda-800">Completar mi perfil</RouterLink>
+        </div>
+        <BaseButton v-else type="button" :cargando="cargando" texto-cargando="Enviando…" @click="postular">
+          {{ esInvitado ? 'Ingresar para postular' : 'Postular' }}
+        </BaseButton>
+      </div>
+    </div>
   </section>
+
+  <EstadoVacio v-else-if="errorCarga" :icono="FileSearch" titulo="Esta oferta ya no está disponible" :texto="errorCarga">
+    <RouterLink to="/ofertas"><AccionBoton variante="primario">Ver otras ofertas</AccionBoton></RouterLink>
+  </EstadoVacio>
+  <div v-else class="mx-auto max-w-3xl"><Esqueleto :filas="3" /></div>
 </template>
