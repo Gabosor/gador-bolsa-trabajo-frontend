@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, nextTick, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ArrowLeft, Building2, CircleAlert, Plus, Trash2 } from 'lucide-vue-next'
 import { api, mensajeError } from '@/api'
@@ -8,19 +8,27 @@ import AccionBoton from '@/components/AccionBoton.vue'
 import BaseButton from '@/components/BaseButton.vue'
 import BaseInput from '@/components/BaseInput.vue'
 import BaseSelect from '@/components/BaseSelect.vue'
-import BaseTextarea from '@/components/BaseTextarea.vue'
+import EditorTexto from '@/components/EditorTexto.vue'
 import Esqueleto from '@/components/Esqueleto.vue'
 import EstadoVacio from '@/components/EstadoVacio.vue'
 import Faja from '@/components/Faja.vue'
-import SelectorChips from '@/components/SelectorChips.vue'
+import SelectorBuscable from '@/components/SelectorBuscable.vue'
+import TextoFormateado from '@/components/TextoFormateado.vue'
 import { useAvisosStore } from '@/stores/avisos'
+import { agregarInactivas, habilidadesSugeridas, opcionesConArea } from '@/utils/catalogos'
 import { NIVELES_HABILIDAD, fecha, monto, nombreNivel, plural } from '@/utils/formato'
 
 interface FilaHabilidad {
-  habilidadId: number | ''
+  habilidadId: number
+  nombre: string
+  /** La habilidad se desactivó después de crear la oferta: hay que quitarla. */
+  inactiva: boolean
   obligatoria: boolean
   nivelMinimo: number
 }
+
+/** Cuántas sugerencias se ven antes de "Ver todas". */
+const SUGERENCIAS_VISIBLES = 12
 
 const PASOS = ['Puesto', 'Requisitos', 'Condiciones', 'Revisar']
 
@@ -49,13 +57,20 @@ const seleccion = reactive({
   municipioId: '' as number | '',
 })
 const profesionIds = ref<number[]>([])
-const filas = ref<FilaHabilidad[]>([{ habilidadId: '', obligatoria: true, nivelMinimo: 1 }])
+const filas = ref<FilaHabilidad[]>([])
 
 const profesiones = ref<ItemCatalogo[]>([])
 const tipos = ref<ItemCatalogo[]>([])
 const modalidades = ref<ItemCatalogo[]>([])
 const municipios = ref<ItemCatalogo[]>([])
 const habilidades = ref<ItemCatalogo[]>([])
+const areas = ref<ItemCatalogo[]>([])
+/** Profesiones guardadas en la oferta, para mostrar las que ya se desactivaron. */
+const profesionesDeOferta = ref<ItemCatalogo[]>([])
+const habilidadBuscada = ref<number | ''>('')
+const verTodasSugeridas = ref(false)
+const anuncioHabilidad = ref('')
+const contenedorSugeridas = ref<HTMLElement>()
 const empresa = ref<Empresa | null>(null)
 const motivoRechazo = ref<string | null>(null)
 const lista = ref(false)
@@ -66,6 +81,20 @@ const cargando = ref(false)
 const hoy = new Date().toLocaleDateString('en-CA', { timeZone: 'America/La_Paz' })
 const esUltimo = computed(() => paso.value === PASOS.length - 1)
 const nombre = (catalogo: ItemCatalogo[], valor: number | '') => catalogo.find((c) => c.id === valor)?.nombre ?? ''
+
+const opcionesProfesion = computed(() =>
+  agregarInactivas(opcionesConArea(profesiones.value, areas.value, 'parentId'), profesionesDeOferta.value),
+)
+const opcionesHabilidad = computed(() => opcionesConArea(habilidades.value, areas.value, 'areaId'))
+const idsElegidos = computed(() => filas.value.map((f) => f.habilidadId))
+const sugeridas = computed(() =>
+  habilidadesSugeridas(habilidades.value, profesiones.value, profesionIds.value, idsElegidos.value),
+)
+const sugeridasVisibles = computed(() =>
+  verTodasSugeridas.value ? sugeridas.value : sugeridas.value.slice(0, SUGERENCIAS_VISIBLES),
+)
+const nombreProfesion = (pid: number) => opcionesProfesion.value.find((o) => o.id === pid)?.nombre ?? ''
+
 const textoSalario = computed(() =>
   form.salarioATratar ? 'Salario a tratar' : `Bs ${monto(form.salarioMin || 0)} a ${monto(form.salarioMax || 0)}`,
 )
@@ -81,6 +110,8 @@ onMounted(async () => {
       catalogo('habilidades'),
       api<Empresa>('/empresas/mi-empresa'),
     ])
+    // Si el backend aún no tiene áreas, el formulario funciona igual, sin grupos.
+    areas.value = await catalogo('AREA').catch(() => [])
     if (id) await cargarOferta()
   } catch (e) {
     error.value = mensajeError(e)
@@ -108,20 +139,48 @@ async function cargarOferta() {
   seleccion.modalidadId = o.modalidad.id
   seleccion.municipioId = o.municipio.id
   profesionIds.value = o.profesiones.map((p) => p.id)
+  profesionesDeOferta.value = o.profesiones
   motivoRechazo.value = o.motivoRechazo
   filas.value = o.habilidades.map((h) => ({
     habilidadId: h.habilidad.id,
+    nombre: h.habilidad.nombre,
+    inactiva: h.habilidad.activo === false,
     obligatoria: h.obligatoria,
     nivelMinimo: h.nivelMinimo,
   }))
+}
+
+async function agregarHabilidad(habilidadId: number, desdeSugerida = -1) {
+  if (idsElegidos.value.includes(habilidadId)) return
+  const habilidad = habilidades.value.find((h) => h.id === habilidadId)
+  if (!habilidad) return
+  filas.value.push({ habilidadId, nombre: habilidad.nombre, inactiva: false, obligatoria: true, nivelMinimo: 1 })
+  anuncioHabilidad.value = `Agregaste ${habilidad.nombre}`
+  if (desdeSugerida < 0) return
+  // El foco pasa a la siguiente sugerencia, para agregar varias seguidas.
+  await nextTick()
+  const botones = contenedorSugeridas.value?.querySelectorAll<HTMLButtonElement>('button[data-sugerida]')
+  if (botones?.length) botones[Math.min(desdeSugerida, botones.length - 1)]?.focus()
+}
+
+function quitarHabilidad(i: number) {
+  const [quitada] = filas.value.splice(i, 1)
+  if (quitada) anuncioHabilidad.value = `Quitaste ${quitada.nombre}`
 }
 
 /** Reglas que el navegador no puede comprobar con los atributos del campo. */
 function errorDelPaso(): string {
   if (paso.value === 1) {
     if (profesionIds.value.length === 0) return 'Selecciona al menos una profesión.'
-    const ids = filas.value.map((f) => f.habilidadId)
-    if (new Set(ids).size !== ids.length) return 'Hay habilidades repetidas.'
+    const profesionesInactivas = opcionesProfesion.value.filter((o) => o.inactiva && profesionIds.value.includes(o.id))
+    if (profesionesInactivas.length) {
+      return `Quita las profesiones que ya no están disponibles: ${profesionesInactivas.map((p) => p.nombre).join(', ')}.`
+    }
+    if (filas.value.length === 0) return 'Agrega al menos una habilidad.'
+    const habilidadesInactivas = filas.value.filter((f) => f.inactiva)
+    if (habilidadesInactivas.length) {
+      return `Quita las habilidades que ya no están disponibles: ${habilidadesInactivas.map((f) => f.nombre).join(', ')}.`
+    }
   }
   if (paso.value === 2 && !form.salarioATratar && Number(form.salarioMin) > Number(form.salarioMax)) {
     return 'El salario mínimo no puede superar al máximo.'
@@ -156,7 +215,8 @@ async function guardar(enviarARevision: boolean) {
       salarioMin: form.salarioATratar ? undefined : Number(form.salarioMin),
       salarioMax: form.salarioATratar ? undefined : Number(form.salarioMax),
       profesionIds: profesionIds.value,
-      habilidades: filas.value,
+      // Solo lo que espera el backend: rechaza campos desconocidos.
+      habilidades: filas.value.map(({ habilidadId, obligatoria, nivelMinimo }) => ({ habilidadId, obligatoria, nivelMinimo })),
     }
     const guardada = await api<{ id: number }>(id ? `/ofertas/${id}` : '/ofertas', { method: id ? 'PUT' : 'POST', body })
     if (enviarARevision) {
@@ -201,7 +261,7 @@ async function guardar(enviarARevision: boolean) {
     <form class="plano space-y-4 p-4" @submit.prevent="esUltimo ? guardar(true) : avanzar()">
       <template v-if="paso === 0">
         <BaseInput v-model="form.titulo" label="Título del puesto" placeholder="Por ejemplo: Desarrollador Full Stack" />
-        <BaseTextarea v-model="form.descripcion" label="Descripción" :filas="6" ayuda="Qué hará la persona y en qué equipo." />
+        <EditorTexto v-model="form.descripcion" label="Descripción" :filas="6" :minlength="10" :maxlength="10000" ayuda="Qué hará la persona y en qué equipo." />
         <div class="grid gap-4 sm:grid-cols-2">
           <BaseSelect v-model="seleccion.tipoContratoId" label="Tipo de contrato" :opciones="tipos" />
           <BaseSelect v-model="seleccion.modalidadId" label="Modalidad" :opciones="modalidades" />
@@ -211,32 +271,87 @@ async function guardar(enviarARevision: boolean) {
       </template>
 
       <template v-else-if="paso === 1">
-        <BaseTextarea v-model="form.requisitosObligatorios" label="Requisitos obligatorios" />
-        <BaseTextarea v-model="form.requisitosDeseables" label="Requisitos deseables" opcional />
+        <EditorTexto v-model="form.requisitosObligatorios" label="Requisitos obligatorios" :minlength="3" :maxlength="5000" ayuda="Usa viñetas para que se lean de un vistazo." />
+        <EditorTexto v-model="form.requisitosDeseables" label="Requisitos deseables" opcional :filas="3" :maxlength="5000" />
         <BaseInput v-model="form.aniosExperiencia" label="Años de experiencia" type="number" inputmode="numeric" min="0" />
-        <SelectorChips v-model="profesionIds" etiqueta="Profesión requerida" :opciones="profesiones" ayuda="Puedes elegir varias." />
+        <SelectorBuscable
+          v-model="profesionIds"
+          label="Profesiones requeridas"
+          :opciones="opcionesProfesion"
+          texto-sin-grupo="Otras profesiones"
+          ayuda="Escribe para buscar; puedes elegir varias."
+        />
 
-        <fieldset>
+        <fieldset class="space-y-3">
           <legend class="font-semibold">Habilidades</legend>
-          <p class="mb-2 text-base text-roca">Con ellas se calcula la compatibilidad de cada postulante.</p>
-          <div v-for="(fila, i) in filas" :key="i" class="mb-3 rounded-campo border border-linea p-3">
-            <div class="grid gap-3 sm:grid-cols-2">
-              <BaseSelect v-model="fila.habilidadId" label="Habilidad" :opciones="habilidades" />
-              <label class="block">
-                <span class="mb-1 block font-semibold">Nivel mínimo</span>
-                <select v-model="fila.nivelMinimo" class="campo">
-                  <option v-for="n in NIVELES_HABILIDAD" :key="n.id" :value="n.id">{{ n.nombre }}</option>
-                </select>
-              </label>
-            </div>
-            <div class="mt-2 flex items-center justify-between gap-2">
-              <label class="flex min-h-11 items-center gap-2">
-                <input v-model="fila.obligatoria" type="checkbox" class="size-5 accent-guinda-700" /> Obligatoria
-              </label>
-              <AccionBoton v-if="filas.length > 1" variante="texto" aria-label="Quitar habilidad" @click="filas.splice(i, 1)"><Trash2 class="size-5" aria-hidden="true" /></AccionBoton>
-            </div>
+          <p class="text-base text-roca">Con ellas se calcula la compatibilidad de cada postulante.</p>
+
+          <div v-if="sugeridas.length" ref="contenedorSugeridas">
+            <p class="mb-2 text-base font-semibold">{{ profesionIds.length ? 'Sugeridas para las profesiones elegidas' : 'Habilidades generales' }}</p>
+            <ul class="flex flex-wrap gap-2">
+              <li v-for="(h, i) in sugeridasVisibles" :key="h.id">
+                <button
+                  type="button"
+                  data-sugerida
+                  class="inline-flex min-h-11 items-center gap-1 rounded-full border border-roca bg-white px-3.5 hover:border-guinda-700 hover:bg-guinda-50"
+                  :aria-label="`Agregar ${h.nombre}`"
+                  @click="agregarHabilidad(h.id, i)"
+                >
+                  <Plus class="size-4" aria-hidden="true" />{{ h.nombre }}
+                </button>
+              </li>
+            </ul>
+            <button
+              v-if="sugeridas.length > SUGERENCIAS_VISIBLES"
+              type="button"
+              class="enlace mt-1 min-h-11"
+              :aria-expanded="verTodasSugeridas"
+              @click="verTodasSugeridas = !verTodasSugeridas"
+            >
+              {{ verTodasSugeridas ? 'Ver menos' : `Ver todas (${sugeridas.length})` }}
+            </button>
           </div>
-          <AccionBoton class="w-full" @click="filas.push({ habilidadId: '', obligatoria: true, nivelMinimo: 1 })"><Plus class="size-5" aria-hidden="true" />Agregar habilidad</AccionBoton>
+
+          <SelectorBuscable
+            v-model="habilidadBuscada"
+            label="Buscar otra habilidad"
+            :opciones="opcionesHabilidad"
+            :excluir="idsElegidos"
+            texto-sin-grupo="Generales"
+            opcional
+            limpiar-al-elegir
+            @elegir="agregarHabilidad"
+          />
+
+          <p v-if="!filas.length" class="rounded-campo border border-dashed border-roca p-3 text-roca">Aún no agregaste habilidades.</p>
+          <ul v-else class="space-y-2" aria-label="Habilidades agregadas">
+            <li
+              v-for="(fila, i) in filas"
+              :key="fila.habilidadId"
+              class="rounded-campo border p-3"
+              :class="fila.inactiva ? 'border-error bg-error-50' : 'border-linea'"
+            >
+              <div class="flex items-start justify-between gap-2">
+                <p class="min-w-0 pt-2 font-semibold break-words">
+                  {{ fila.nombre }}
+                  <span v-if="fila.inactiva" class="block text-sm font-normal text-error">Ya no está disponible. Quítala para continuar.</span>
+                </p>
+                <AccionBoton variante="texto" :aria-label="`Quitar ${fila.nombre}`" @click="quitarHabilidad(i)"><Trash2 class="size-5" aria-hidden="true" /></AccionBoton>
+              </div>
+              <div class="mt-2 grid gap-3 sm:grid-cols-2 sm:items-end">
+                <label class="block">
+                  <span class="mb-1 block text-base">Nivel mínimo</span>
+                  <select v-model="fila.nivelMinimo" class="campo" :aria-label="`Nivel mínimo de ${fila.nombre}`">
+                    <option v-for="n in NIVELES_HABILIDAD" :key="n.id" :value="n.id">{{ n.nombre }}</option>
+                  </select>
+                </label>
+                <label class="flex min-h-12 items-center gap-2">
+                  <input v-model="fila.obligatoria" type="checkbox" class="size-5 accent-guinda-700" :aria-label="`${fila.nombre} es obligatoria`" /> Obligatoria
+                </label>
+              </div>
+            </li>
+          </ul>
+          <p class="sr-only" aria-live="polite">{{ anuncioHabilidad }}</p>
         </fieldset>
       </template>
 
@@ -248,7 +363,7 @@ async function guardar(enviarARevision: boolean) {
           <BaseInput v-model="form.salarioMin" label="Salario mínimo (Bs)" type="number" inputmode="numeric" min="1" />
           <BaseInput v-model="form.salarioMax" label="Salario máximo (Bs)" type="number" inputmode="numeric" min="1" />
         </div>
-        <BaseTextarea v-model="form.beneficios" label="Beneficios" opcional />
+        <EditorTexto v-model="form.beneficios" label="Beneficios" opcional :filas="3" :maxlength="3000" ayuda="Por ejemplo: seguro de salud, capacitación, horario flexible." />
         <BaseInput v-model="form.fechaCierre" label="Fecha de cierre" type="date" :min="hoy" />
       </template>
 
@@ -267,15 +382,15 @@ async function guardar(enviarARevision: boolean) {
           <div><dt class="text-base text-roca">Experiencia</dt><dd>{{ plural(Number(form.aniosExperiencia), 'año') }}</dd></div>
           <div><dt class="text-base text-roca">Cierre</dt><dd>{{ fecha(form.fechaCierre) }}</dd></div>
         </dl>
-        <div><h3 class="font-bold">Descripción</h3><p class="break-words whitespace-pre-line">{{ form.descripcion }}</p></div>
-        <div><h3 class="font-bold">Requisitos obligatorios</h3><p class="break-words whitespace-pre-line">{{ form.requisitosObligatorios }}</p></div>
-        <div v-if="form.requisitosDeseables"><h3 class="font-bold">Requisitos deseables</h3><p class="break-words whitespace-pre-line">{{ form.requisitosDeseables }}</p></div>
-        <div><h3 class="font-bold">Profesiones</h3><p>{{ profesionIds.map((p) => nombre(profesiones, p)).join(', ') }}</p></div>
+        <div><h3 class="mb-1 font-bold">Descripción</h3><TextoFormateado :texto="form.descripcion" /></div>
+        <div><h3 class="mb-1 font-bold">Requisitos obligatorios</h3><TextoFormateado :texto="form.requisitosObligatorios" /></div>
+        <div v-if="form.requisitosDeseables"><h3 class="mb-1 font-bold">Requisitos deseables</h3><TextoFormateado :texto="form.requisitosDeseables" /></div>
+        <div><h3 class="font-bold">Profesiones</h3><p>{{ profesionIds.map(nombreProfesion).join(', ') }}</p></div>
         <div>
           <h3 class="font-bold">Habilidades</h3>
-          <ul><li v-for="f in filas" :key="f.habilidadId">{{ nombre(habilidades, f.habilidadId) }}: {{ nombreNivel(f.nivelMinimo) }}, {{ f.obligatoria ? 'obligatoria' : 'deseable' }}</li></ul>
+          <ul><li v-for="f in filas" :key="f.habilidadId">{{ f.nombre }}: {{ nombreNivel(f.nivelMinimo) }}, {{ f.obligatoria ? 'obligatoria' : 'deseable' }}</li></ul>
         </div>
-        <div v-if="form.beneficios"><h3 class="font-bold">Beneficios</h3><p class="break-words whitespace-pre-line">{{ form.beneficios }}</p></div>
+        <div v-if="form.beneficios"><h3 class="mb-1 font-bold">Beneficios</h3><TextoFormateado :texto="form.beneficios" /></div>
       </template>
 
       <p v-if="error" role="alert" class="text-error">{{ error }}</p>

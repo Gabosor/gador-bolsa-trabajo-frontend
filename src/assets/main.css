@@ -112,6 +112,19 @@
     animation: hoja-sube 180ms ease-out;
   }
 
+  /* Textarea que crece con el contenido hasta un tope; luego hace scroll. */
+  .campo-texto {
+    resize: none;
+    overflow-y: auto;
+    max-height: min(60dvh, 32rem);
+  }
+
+  @supports (field-sizing: content) {
+    .campo-texto {
+      field-sizing: content;
+    }
+  }
+
   .hoja::backdrop {
     background: rgb(33 37 43 / 55%);
   }
@@ -127,6 +140,19 @@
 
     .hoja[open] {
       animation-name: hoja-entra;
+    }
+
+    /* Confirmaciones y menús cortos: ventana centrada, no panel lateral. */
+    .hoja.hoja-centrada {
+      margin: auto;
+      height: auto;
+      max-height: min(85dvh, 40rem);
+      width: min(32rem, calc(100vw - 2rem));
+      border-radius: var(--radius-hoja);
+    }
+
+    .hoja.hoja-centrada[open] {
+      animation-name: hoja-aparece;
     }
   }
 
@@ -152,6 +178,13 @@
 @keyframes hoja-sube {
   from {
     transform: translateY(2rem);
+    opacity: 0.4;
+  }
+}
+
+@keyframes hoja-aparece {
+  from {
+    transform: scale(0.97);
     opacity: 0.4;
   }
 }

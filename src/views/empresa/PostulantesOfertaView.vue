@@ -10,6 +10,7 @@ import EstadoBadge from '@/components/EstadoBadge.vue'
 import EstadoVacio from '@/components/EstadoVacio.vue'
 import Faja from '@/components/Faja.vue'
 import HojaInferior from '@/components/HojaInferior.vue'
+import TextoFormateado from '@/components/TextoFormateado.vue'
 import { useAvisosStore } from '@/stores/avisos'
 import { confirmar } from '@/utils/confirmar'
 import { ETAPAS_POSTULACION, nombreNivel, plural } from '@/utils/formato'
@@ -185,7 +186,7 @@ onMounted(cargar)
           <div v-for="x in detalle.perfil.experiencias" :key="x.id" class="mb-2">
             <p class="font-semibold">{{ x.cargo }}, {{ x.empresa }}</p>
             <p class="text-roca">{{ plural(x.anios, 'año') }}</p>
-            <p class="break-words whitespace-pre-line">{{ x.descripcion }}</p>
+            <TextoFormateado :texto="x.descripcion" />
           </div>
         </div>
         <div v-if="detalle.perfil.habilidades.length">

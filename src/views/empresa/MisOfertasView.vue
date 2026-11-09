@@ -189,7 +189,7 @@ onMounted(cargar)
       </table>
     </div>
 
-    <HojaInferior v-model="menuAbierto" :titulo="menuDe?.titulo ?? ''">
+    <HojaInferior v-model="menuAbierto" variante="centrado" :titulo="menuDe?.titulo ?? ''">
       <div v-if="menuDe" class="space-y-1">
         <button
           v-for="a in acciones(menuDe).slice(1)"

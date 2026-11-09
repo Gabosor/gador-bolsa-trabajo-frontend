@@ -28,12 +28,12 @@ function aceptar() {
 </script>
 
 <template>
-  <HojaInferior v-model="abierta" :titulo="dialogoActual?.titulo ?? ''">
+  <HojaInferior v-model="abierta" variante="centrado" :titulo="dialogoActual?.titulo ?? ''">
     <form v-if="dialogoActual" class="space-y-4" @submit.prevent="aceptar">
       <p v-if="dialogoActual.mensaje">{{ dialogoActual.mensaje }}</p>
       <label v-if="dialogoActual.campo" class="block">
         <span class="mb-1 block font-semibold">{{ dialogoActual.campo.etiqueta }}</span>
-        <textarea v-if="dialogoActual.campo.multilinea" v-model="texto" rows="3" class="campo py-3" :required="!dialogoActual.campo.opcional" />
+        <textarea v-if="dialogoActual.campo.multilinea" v-model="texto" rows="3" maxlength="1000" class="campo campo-texto min-h-24 py-3" :required="!dialogoActual.campo.opcional" />
         <input v-else v-model="texto" class="campo" :required="!dialogoActual.campo.opcional" />
       </label>
       <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">

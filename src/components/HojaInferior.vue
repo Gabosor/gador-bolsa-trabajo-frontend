@@ -3,7 +3,14 @@ import { nextTick, ref, watch } from 'vue'
 import { X } from 'lucide-vue-next'
 
 const abierta = defineModel<boolean>({ default: false })
-defineProps<{ titulo: string }>()
+withDefaults(
+  defineProps<{
+    titulo: string
+    /** 'panel' se abre a la derecha en escritorio; 'centrado', al medio. */
+    variante?: 'panel' | 'centrado'
+  }>(),
+  { variante: 'panel' },
+)
 
 const dialogo = ref<HTMLDialogElement>()
 
@@ -25,7 +32,7 @@ function clicFondo(evento: MouseEvent) {
 </script>
 
 <template>
-  <dialog ref="dialogo" class="hoja" @close="abierta = false" @click="clicFondo">
+  <dialog ref="dialogo" class="hoja" :class="{ 'hoja-centrada': variante === 'centrado' }" @close="abierta = false" @click="clicFondo">
     <div class="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-linea bg-white px-4 py-2">
       <h2 class="min-w-0 text-xl font-bold text-guinda-900">{{ titulo }}</h2>
       <button type="button" class="flex size-11 shrink-0 items-center justify-center rounded-full hover:bg-salar" aria-label="Cerrar" @click="abierta = false">
