@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { FileSpreadsheet, FileText, LoaderCircle } from 'lucide-vue-next'
 import { api, mensajeError } from '@/api'
 import AccionBoton from '@/components/AccionBoton.vue'
 import BaseInput from '@/components/BaseInput.vue'
+import { useAvisosStore } from '@/stores/avisos'
 
 const REPORTES = [
   { tipo: 'empresas', titulo: 'Empresas', detalle: 'NIT, razón social, rubro y estado' },
@@ -11,13 +13,12 @@ const REPORTES = [
   { tipo: 'contrataciones', titulo: 'Contrataciones por empresa', detalle: 'Postulaciones y contratados' },
 ]
 
+const avisos = useAvisosStore()
 const desde = ref('')
 const hasta = ref('')
-const error = ref('')
 const generando = ref('')
 
 async function descargar(tipo: string, formato: 'excel' | 'pdf') {
-  error.value = ''
   generando.value = `${tipo}-${formato}`
   try {
     const archivo = await api<Blob, 'blob'>(`/reportes/${tipo}`, {
@@ -34,8 +35,9 @@ async function descargar(tipo: string, formato: 'excel' | 'pdf') {
     enlace.download = `reporte-${tipo}.${formato === 'excel' ? 'xlsx' : 'pdf'}`
     enlace.click()
     URL.revokeObjectURL(url)
+    avisos.exito('Reporte descargado')
   } catch (e) {
-    error.value = mensajeError(e)
+    avisos.error(mensajeError(e))
   } finally {
     generando.value = ''
   }
@@ -44,21 +46,20 @@ async function descargar(tipo: string, formato: 'excel' | 'pdf') {
 
 <template>
   <section class="mx-auto max-w-3xl">
-    <h1 class="mb-4 text-2xl font-semibold text-guinda-900">Reportes</h1>
-    <p v-if="error" role="alert" class="mb-4 text-sm text-red-700">{{ error }}</p>
-    <ul class="space-y-3">
-      <li v-for="r in REPORTES" :key="r.tipo" class="rounded-md border border-stone-200 bg-white p-4">
+    <h1 class="titulo-pagina mb-3">Reportes</h1>
+    <ul class="plano divide-y divide-linea">
+      <li v-for="r in REPORTES" :key="r.tipo" class="p-4">
         <div class="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 class="font-semibold">{{ r.titulo }}</h2>
-            <p class="text-sm text-stone-600">{{ r.detalle }}</p>
+            <h2 class="text-lg font-bold">{{ r.titulo }}</h2>
+            <p class="text-roca">{{ r.detalle }}</p>
           </div>
           <div class="flex gap-2">
             <AccionBoton :disabled="generando !== ''" @click="descargar(r.tipo, 'excel')">
-              {{ generando === `${r.tipo}-excel` ? 'Generando…' : 'Excel' }}
+              <component :is="generando === `${r.tipo}-excel` ? LoaderCircle : FileSpreadsheet" class="size-5" :class="{ 'animate-spin': generando === `${r.tipo}-excel` }" aria-hidden="true" />Excel
             </AccionBoton>
             <AccionBoton :disabled="generando !== ''" @click="descargar(r.tipo, 'pdf')">
-              {{ generando === `${r.tipo}-pdf` ? 'Generando…' : 'PDF' }}
+              <component :is="generando === `${r.tipo}-pdf` ? LoaderCircle : FileText" class="size-5" :class="{ 'animate-spin': generando === `${r.tipo}-pdf` }" aria-hidden="true" />PDF
             </AccionBoton>
           </div>
         </div>

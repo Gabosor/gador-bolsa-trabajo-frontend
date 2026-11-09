@@ -1,16 +1,175 @@
-@import '@fontsource-variable/inter';
+@import '@fontsource-variable/archivo/wdth.css';
+@import '@fontsource-variable/atkinson-hyperlegible-next/wght.css';
 @import 'tailwindcss';
 
 @theme {
-  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'Atkinson Hyperlegible Next Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-titulo: 'Archivo Variable', ui-sans-serif, system-ui, sans-serif;
+
   --color-guinda-50: #fbf1f2;
   --color-guinda-100: #f4d9dc;
   --color-guinda-600: #93202e;
   --color-guinda-700: #73141f;
   --color-guinda-800: #5a0f18;
   --color-guinda-900: #3f0a11;
+
+  --color-noche: #21252b;
+  --color-salar: #f1f3f4;
+  --color-roca: #5c6670;
+  --color-linea: #d9dee2;
+  --color-oro: #c8921e;
+  --color-lago: #1f6f78;
+  --color-lago-50: #e4f1f2;
+
+  --color-exito: #1e6b45;
+  --color-exito-50: #e3f2ea;
+  --color-alerta: #80540a;
+  --color-alerta-50: #fbf0d9;
+  --color-error: #a32a2a;
+  --color-error-50: #fbe7e7;
+
+  --radius-campo: 8px;
+  --radius-hoja: 20px;
 }
 
-body {
-  @apply bg-stone-50 text-stone-900 antialiased;
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html:has(dialog[open]) {
+    overflow: hidden;
+  }
+
+  body {
+    @apply bg-salar text-noche antialiased;
+    font-size: 1.0625rem;
+    line-height: 1.5;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-titulo);
+    font-stretch: 90%;
+    line-height: 1.15;
+    text-wrap: balance;
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--color-lago);
+    outline-offset: 2px;
+  }
+
+  button:not(:disabled),
+  summary,
+  label:has(input[type='checkbox']) {
+    cursor: pointer;
+  }
+}
+
+@layer components {
+  .titulo-pagina {
+    @apply text-[1.75rem] font-bold text-guinda-900 lg:text-[2rem];
+  }
+
+  .campo {
+    @apply min-h-12 w-full rounded-campo border border-roca bg-white px-3 text-noche;
+  }
+
+  .campo:focus {
+    @apply border-guinda-700 outline-none;
+    box-shadow: 0 0 0 3px var(--color-guinda-100);
+  }
+
+  .campo[aria-invalid='true'] {
+    @apply border-error;
+  }
+
+  .enlace {
+    @apply font-semibold text-guinda-700 underline underline-offset-2;
+  }
+
+  /* Superficie blanca que agrupa contenido; sin sombra: la jerarquía la da el fondo. */
+  .plano {
+    @apply rounded-campo border border-linea bg-white;
+  }
+
+  /* Acción principal fija sobre la navegación inferior en el móvil. */
+  .barra-accion {
+    @apply fixed inset-x-0 z-20 border-t border-linea bg-white px-4 py-3 lg:static lg:border-0 lg:bg-transparent lg:p-0;
+    bottom: var(--alto-nav);
+  }
+
+  .hoja {
+    @apply m-0 max-h-[90dvh] w-full max-w-none overflow-y-auto bg-white p-0 text-noche;
+    margin-top: auto;
+    border-radius: var(--radius-hoja) var(--radius-hoja) 0 0;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .hoja[open] {
+    animation: hoja-sube 180ms ease-out;
+  }
+
+  .hoja::backdrop {
+    background: rgb(33 37 43 / 55%);
+  }
+
+  @media (min-width: 64rem) {
+    .hoja {
+      margin: 0 0 0 auto;
+      height: 100dvh;
+      max-height: none;
+      width: 30rem;
+      border-radius: var(--radius-hoja) 0 0 var(--radius-hoja);
+    }
+
+    .hoja[open] {
+      animation-name: hoja-entra;
+    }
+  }
+
+  /* La faja: segmentos tejidos que solo representan un avance real. */
+  .faja-segmento {
+    height: 0.75rem;
+    flex: 1 1 0;
+    clip-path: polygon(14% 0, 100% 0, 86% 100%, 0 100%);
+    background: var(--color-linea);
+  }
+
+  .faja-segmento[data-activo='true'] {
+    background: linear-gradient(
+      to bottom,
+      var(--color-guinda-700) 0 34%,
+      var(--color-oro) 34% 50%,
+      var(--color-lago) 50% 66%,
+      var(--color-guinda-700) 66% 100%
+    );
+  }
+}
+
+@keyframes hoja-sube {
+  from {
+    transform: translateY(2rem);
+    opacity: 0.4;
+  }
+}
+
+@keyframes hoja-entra {
+  from {
+    transform: translateX(2rem);
+    opacity: 0.4;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

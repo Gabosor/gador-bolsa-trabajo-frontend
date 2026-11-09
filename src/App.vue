@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { RouterView } from 'vue-router'
+import { RouterView, useRoute } from 'vue-router'
 import AppLayout from './components/AppLayout.vue'
+
+const route = useRoute()
 </script>
 
 <template>
   <AppLayout>
-    <RouterView />
+    <RouterView :key="route.path" />
   </AppLayout>
 </template>
