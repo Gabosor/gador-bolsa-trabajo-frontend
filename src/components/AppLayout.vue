@@ -2,6 +2,7 @@
 import { computed, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Bell, CircleUserRound, KeyRound, LogOut, Menu } from 'lucide-vue-next'
+import AppFooter from '@/components/AppFooter.vue'
 import Avisos from '@/components/Avisos.vue'
 import DialogoConfirmar from '@/components/DialogoConfirmar.vue'
 import HojaInferior from '@/components/HojaInferior.vue'
@@ -11,6 +12,7 @@ import { useInteraccionesStore } from '@/stores/interacciones'
 import { useNotificacionesStore } from '@/stores/notificaciones'
 
 const CONSULTA_AVISOS_MS = 60_000
+const ACTUAL = 'underline decoration-guinda-700 decoration-2 underline-offset-8'
 
 const auth = useAuthStore()
 const interacciones = useInteraccionesStore()
@@ -106,9 +108,9 @@ function salir() {
     <div class="flex min-w-0 flex-1 flex-col" :class="{ 'lg:pl-60': auth.usuario }">
       <!-- Barra superior: con sesión desaparece en escritorio. -->
       <header class="sticky top-0 z-20 border-b border-linea bg-white pt-[env(safe-area-inset-top)]" :class="{ 'lg:hidden': auth.usuario }">
-        <div class="mx-auto flex h-14 max-w-6xl items-center justify-between gap-3 px-4">
+        <div class="mx-auto flex h-14 max-w-6xl items-center justify-between gap-3 px-4 sm:h-16 lg:px-8">
           <RouterLink to="/" class="flex min-w-0 items-center gap-2">
-            <img src="/img/escudo.png" alt="" class="h-9 w-auto" />
+            <img src="/img/escudo.png" alt="" class="h-9 w-auto sm:h-13" />
             <span class="truncate font-titulo leading-tight font-bold text-guinda-900">Bolsa de Trabajo<span class="block truncate font-sans text-sm font-normal text-roca">Gobernación de Oruro</span></span>
           </RouterLink>
           <nav v-if="auth.usuario" aria-label="Cuenta" class="flex shrink-0 items-center">
@@ -120,21 +122,23 @@ function salir() {
               <CircleUserRound class="size-6" aria-hidden="true" />
             </button>
           </nav>
-          <nav v-else aria-label="Acceso" class="flex shrink-0 items-center gap-1">
-            <RouterLink to="/ofertas" class="hidden min-h-11 items-center rounded-campo px-3 font-semibold hover:bg-salar sm:flex">Ofertas</RouterLink>
-            <RouterLink to="/login" class="flex min-h-11 items-center rounded-campo px-3 font-semibold hover:bg-salar">Ingresar</RouterLink>
-            <RouterLink to="/registro" class="hidden min-h-11 items-center rounded-campo bg-guinda-700 px-3 font-semibold text-white hover:bg-guinda-800 sm:flex">Crear cuenta</RouterLink>
+          <nav v-else aria-label="Acceso" class="flex shrink-0 items-center sm:gap-1">
+            <RouterLink to="/ofertas" class="hidden min-h-11 items-center rounded-campo px-3 font-semibold hover:bg-salar sm:flex" :class="{ [ACTUAL]: activo('/ofertas') }" :aria-current="activo('/ofertas') ? 'page' : undefined">Ofertas</RouterLink>
+            <RouterLink to="/empresas/registro" class="hidden min-h-11 items-center rounded-campo px-3 font-semibold hover:bg-salar sm:flex" :class="{ [ACTUAL]: activo('/empresas/registro') }" :aria-current="activo('/empresas/registro') ? 'page' : undefined">Para empresas</RouterLink>
+            <RouterLink to="/login" class="flex min-h-11 items-center rounded-campo px-2 font-semibold hover:bg-salar sm:px-3" :class="{ [ACTUAL]: activo('/login') }" :aria-current="activo('/login') ? 'page' : undefined">Ingresar</RouterLink>
+            <RouterLink to="/registro" class="hidden min-h-11 items-center rounded-campo bg-guinda-700 px-3 font-semibold text-white hover:bg-guinda-800 sm:flex" :aria-current="activo('/registro') ? 'page' : undefined">Crear cuenta</RouterLink>
+            <button type="button" class="flex size-11 items-center justify-center rounded-full hover:bg-salar sm:hidden" aria-label="Menú" @click="menu = true">
+              <Menu class="size-6" aria-hidden="true" />
+            </button>
           </nav>
         </div>
       </header>
 
-      <main id="contenido" class="mx-auto w-full max-w-6xl flex-1 px-4 py-5 lg:px-8 lg:py-8" :style="{ paddingBottom: 'calc(var(--alto-nav) + 1.5rem)' }">
+      <main id="contenido" class="mx-auto w-full max-w-6xl flex-1 px-4 py-5 lg:px-8 lg:py-8">
         <slot />
       </main>
 
-      <footer class="px-4 pt-2 pb-[calc(var(--alto-nav)+1rem)] text-center text-sm text-roca">
-        Gobierno Autónomo Departamental de Oruro, Unidad de Sistemas e Informática
-      </footer>
+      <AppFooter :compacto="auth.usuario !== null" />
     </div>
 
     <!-- Navegación inferior: móvil y tableta, con sesión. -->
@@ -155,8 +159,13 @@ function salir() {
       </button>
     </nav>
 
-    <HojaInferior v-model="menu" :titulo="auth.usuario?.nombreCompleto ?? 'Cuenta'">
-      <nav aria-label="Más opciones" class="-mx-1 space-y-1">
+    <HojaInferior v-model="menu" :titulo="auth.usuario?.nombreCompleto ?? 'Menú'">
+      <nav v-if="!auth.usuario" aria-label="Menú" class="-mx-1 space-y-1">
+        <RouterLink to="/ofertas" class="flex min-h-12 items-center rounded-campo px-3 font-semibold hover:bg-salar">Ver ofertas</RouterLink>
+        <RouterLink to="/registro" class="flex min-h-12 items-center rounded-campo px-3 font-semibold hover:bg-salar">Crear cuenta</RouterLink>
+        <RouterLink to="/empresas/registro" class="flex min-h-12 items-center rounded-campo px-3 font-semibold hover:bg-salar">Registrar empresa</RouterLink>
+      </nav>
+      <nav v-else aria-label="Más opciones" class="-mx-1 space-y-1">
         <template v-if="esAdmin">
           <RouterLink v-for="d in SECUNDARIOS_ADMIN" :key="d.a" :to="d.a" class="flex min-h-12 items-center gap-3 rounded-campo px-3 font-semibold hover:bg-salar">
             <component :is="d.icono" class="size-5" aria-hidden="true" />{{ d.texto }}

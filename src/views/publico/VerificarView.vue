@@ -56,7 +56,7 @@ async function reenviar() {
     otpDemo.value = r.otpDemo
     codigo.value = ''
     iniciarEspera()
-    avisos.exito('Generamos un código nuevo')
+    avisos.exito(r.otpDemo ? 'Generamos un código nuevo' : 'Te enviamos un código nuevo por WhatsApp')
   } catch (e) {
     error.value = mensajeError(e)
   }
@@ -64,7 +64,7 @@ async function reenviar() {
 </script>
 
 <template>
-  <AccesoMarco titulo="Verifica tu celular" texto="Ingresa el código de 6 dígitos. Vence en 10 minutos.">
+  <AccesoMarco titulo="Verifica tu celular" :texto="otpDemo ? 'Ingresa el código de 6 dígitos. Vence en 10 minutos.' : 'Ingresa el código de 6 dígitos que te enviamos por WhatsApp. Vence en 10 minutos.'">
     <p v-if="otpDemo" class="mb-4 rounded-campo bg-lago-50 p-3">Modo demostración. Tu código es <strong>{{ otpDemo }}</strong></p>
     <form class="space-y-4" @submit.prevent="verificar">
       <CampoOtp v-model="codigo" />
@@ -72,7 +72,7 @@ async function reenviar() {
       <BaseButton :cargando="cargando" texto-cargando="Verificando…">Verificar</BaseButton>
     </form>
     <AccionBoton variante="texto" class="mt-3 w-full" :disabled="restante > 0" @click="reenviar">
-      {{ restante > 0 ? `Pedir otro código en ${restante} s` : 'Generar un código nuevo' }}
+      {{ restante > 0 ? `Pedir otro código en ${restante} s` : 'Enviar un código nuevo' }}
     </AccionBoton>
   </AccesoMarco>
 </template>

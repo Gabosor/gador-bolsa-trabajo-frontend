@@ -62,7 +62,8 @@ const lista = ref(false)
 const error = ref('')
 const cargando = ref(false)
 
-const hoy = new Date().toISOString().slice(0, 10)
+// En formato ISO y hora de Bolivia: de noche, UTC ya marca el día siguiente.
+const hoy = new Date().toLocaleDateString('en-CA', { timeZone: 'America/La_Paz' })
 const esUltimo = computed(() => paso.value === PASOS.length - 1)
 const nombre = (catalogo: ItemCatalogo[], valor: number | '') => catalogo.find((c) => c.id === valor)?.nombre ?? ''
 const textoSalario = computed(() =>

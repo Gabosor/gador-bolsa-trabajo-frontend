@@ -39,7 +39,7 @@ async function enviar() {
     <form class="space-y-4" @submit.prevent="enviar">
       <BaseInput v-model="form.nombreCompleto" label="Nombre completo" autocomplete="name" />
       <BaseInput v-model="form.ci" label="Carnet de identidad" inputmode="numeric" />
-      <BaseInput v-model="form.celular" label="Celular" type="tel" inputmode="tel" autocomplete="tel" :maxlength="8" pattern="[67][0-9]{7}" titulo="8 dígitos, empieza con 6 o 7" ayuda="Te enviaremos un código a este número." />
+      <BaseInput v-model="form.celular" label="Celular" type="tel" inputmode="tel" autocomplete="tel" :maxlength="8" pattern="[67][0-9]{7}" titulo="8 dígitos, empieza con 6 o 7" ayuda="Te enviaremos un código por WhatsApp a este número." />
       <BaseInput v-model="form.email" label="Correo electrónico" type="email" inputmode="email" autocomplete="email" />
       <div>
         <BaseInput v-model="form.password" label="Contraseña" type="password" autocomplete="new-password" />
