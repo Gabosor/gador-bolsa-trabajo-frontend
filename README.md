@@ -3,7 +3,7 @@
 Aplicación web instalable de la Gobernación de Oruro para postulantes, empresas y administradores.
 
 **Stack:** Vue 3, TypeScript, Vite, Tailwind CSS, Pinia, Vue Router, `vite-plugin-pwa`.
-**API:** repositorio aparte (`backend`), que también contiene la documentación completa del sistema.
+**API:** repositorio aparte (`backend`). La documentación técnica del sistema se entrega por separado.
 
 ## Requisitos
 
@@ -37,9 +37,10 @@ Todo `VITE_*` llega al navegador: aquí solo van valores públicos.
 ```
 src/
   api/          cliente HTTP, tipos y notificaciones push
-  stores/       sesión (Pinia)
+  stores/       sesión, avisos, interacciones y notificaciones (Pinia)
   router/       rutas protegidas por rol
   components/   componentes reutilizables
+  utils/        formato de datos y diálogo de confirmación
   views/        publico, postulante, empresa, admin
   sw.js         service worker: caché y notificaciones
 ```
