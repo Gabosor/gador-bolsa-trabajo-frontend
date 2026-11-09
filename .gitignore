@@ -14,6 +14,12 @@ dist-ssr
 coverage
 *.local
 
+# APK de Android: la llave de firma nunca se versiona
+*.keystore
+*.jks
+*.apk
+*.aab
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
