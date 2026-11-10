@@ -30,6 +30,7 @@ Todo `VITE_*` llega al navegador: aquí solo van valores públicos.
 |---|---|
 | `npm run dev` | Desarrollo |
 | `npm run build` | Comprueba tipos y compila en `dist/` |
+| `npm test` | Pruebas del editor de texto, el texto con formato y los catálogos agrupados (Vitest) |
 | `npm run preview` | Sirve la compilación; el service worker solo funciona aquí o en producción |
 
 ## Estructura
@@ -40,7 +41,8 @@ src/
   stores/       sesión, avisos, interacciones y notificaciones (Pinia)
   router/       rutas protegidas por rol
   components/   componentes reutilizables
-  utils/        formato de datos y diálogo de confirmación
+  composables/  lógica reutilizable de Vue (consultas de medios)
+  utils/        formato de datos, editor de texto, catálogos agrupados y diálogos
   views/        publico, postulante, empresa, admin
   sw.js         service worker: caché y notificaciones
 ```
