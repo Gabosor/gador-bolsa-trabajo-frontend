@@ -7,7 +7,7 @@ import AccionBoton from '@/components/AccionBoton.vue'
 import BaseButton from '@/components/BaseButton.vue'
 import BaseInput from '@/components/BaseInput.vue'
 import BaseSelect from '@/components/BaseSelect.vue'
-import BaseTextarea from '@/components/BaseTextarea.vue'
+import EditorTexto from '@/components/EditorTexto.vue'
 import CargaArchivo from '@/components/CargaArchivo.vue'
 import EstadoVacio from '@/components/EstadoVacio.vue'
 import Faja from '@/components/Faja.vue'
@@ -102,7 +102,7 @@ async function enviar() {
           <BaseInput v-model="form.razonSocial" label="Razón social" />
           <BaseSelect v-model="rubroId" label="Rubro" :opciones="rubros" />
           <BaseInput v-model="form.direccion" label="Dirección" autocomplete="street-address" />
-          <BaseTextarea v-model="form.descripcion" label="Descripción de la empresa" ayuda="Los postulantes la verán en tus ofertas." />
+          <EditorTexto v-model="form.descripcion" label="Descripción de la empresa" :minlength="10" :maxlength="3000" ayuda="Los postulantes la verán en tus ofertas." />
         </template>
 
         <template v-else-if="paso === 1">
@@ -117,9 +117,9 @@ async function enviar() {
         </template>
 
         <template v-else>
-          <CargaArchivo etiqueta="Documento NIT" :tipos="['application/pdf']" :max-mb="5" ayuda="PDF, hasta 5 MB" @elegir="archivos.documentoNit = $event" />
-          <CargaArchivo etiqueta="Respaldo legal" :tipos="['application/pdf']" :max-mb="5" ayuda="PDF, hasta 5 MB" @elegir="archivos.documentoLegal = $event" />
-          <CargaArchivo etiqueta="Logo (opcional)" :tipos="['image/png', 'image/jpeg']" :max-mb="2" ayuda="PNG o JPG, hasta 2 MB" @elegir="archivos.logo = $event" />
+          <CargaArchivo etiqueta="Documento NIT" :tipos="['application/pdf']" :max-mb="5" ayuda="PDF, hasta 5 MB" quitable @elegir="archivos.documentoNit = $event" @quitar="archivos.documentoNit = undefined" />
+          <CargaArchivo etiqueta="Respaldo legal" :tipos="['application/pdf']" :max-mb="5" ayuda="PDF, hasta 5 MB" quitable @elegir="archivos.documentoLegal = $event" @quitar="archivos.documentoLegal = undefined" />
+          <CargaArchivo etiqueta="Logo (opcional)" :tipos="['image/png', 'image/jpeg']" :max-mb="2" ayuda="PNG o JPG, hasta 2 MB" quitable @elegir="archivos.logo = $event" @quitar="archivos.logo = undefined" />
         </template>
 
         <p v-if="error" role="alert" class="text-error">{{ error }}</p>

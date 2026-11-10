@@ -8,6 +8,7 @@ import Esqueleto from '@/components/Esqueleto.vue'
 import EstadoBadge from '@/components/EstadoBadge.vue'
 import EstadoVacio from '@/components/EstadoVacio.vue'
 import Faja from '@/components/Faja.vue'
+import TextoFormateado from '@/components/TextoFormateado.vue'
 import { useAvisosStore } from '@/stores/avisos'
 import { useInteraccionesStore } from '@/stores/interacciones'
 import { confirmar } from '@/utils/confirmar'
@@ -98,8 +99,9 @@ onMounted(cargar)
           <AccionBoton v-if="p.estado === 'POSTULADO'" variante="peligro" @click="retirar(p)">Retirar</AccionBoton>
         </div>
         <div v-if="abierta === p.id" class="mt-3 space-y-2 border-t border-linea pt-3">
-          <p class="break-words whitespace-pre-line">{{ p.oferta.descripcion }}</p>
-          <p class="break-words whitespace-pre-line"><strong>Requisitos:</strong> {{ p.oferta.requisitosObligatorios }}</p>
+          <TextoFormateado :texto="p.oferta.descripcion" />
+          <p class="font-semibold">Requisitos</p>
+          <TextoFormateado :texto="p.oferta.requisitosObligatorios" />
         </div>
       </li>
     </ul>

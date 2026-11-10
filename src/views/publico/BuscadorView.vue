@@ -24,6 +24,7 @@ const filtros = reactive<Filtros>({ profesionId: '', municipioId: '', modalidadI
 const profesiones = ref<ItemCatalogo[]>([])
 const municipios = ref<ItemCatalogo[]>([])
 const modalidades = ref<ItemCatalogo[]>([])
+const areas = ref<ItemCatalogo[]>([])
 const ofertas = ref<Oferta[]>([])
 const meta = ref({ page: 1, totalPages: 0, total: 0 })
 const error = ref('')
@@ -90,10 +91,11 @@ onMounted(async () => {
   leerUrl()
   try {
     const catalogo = (t: string) => api<ItemCatalogo[]>(`/catalogos/${t}`)
-    ;[profesiones.value, municipios.value, modalidades.value] = await Promise.all([
+    ;[profesiones.value, municipios.value, modalidades.value, areas.value] = await Promise.all([
       catalogo('PROFESION'),
       catalogo('MUNICIPIO'),
       catalogo('MODALIDAD'),
+      catalogo('AREA').catch(() => []),
     ])
   } catch (e) {
     error.value = mensajeError(e)
@@ -124,7 +126,7 @@ onMounted(async () => {
       <aside class="hidden lg:block" aria-label="Filtros">
         <div class="plano sticky top-6 p-4">
           <h2 class="mb-3 text-lg font-bold">Filtros</h2>
-          <FiltrosOfertas :filtros="filtros" :profesiones="profesiones" :municipios="municipios" :modalidades="modalidades" @aplicar="aplicar()" />
+          <FiltrosOfertas :filtros="filtros" :profesiones="profesiones" :municipios="municipios" :modalidades="modalidades" :areas="areas" @aplicar="aplicar()" />
         </div>
       </aside>
 
@@ -155,7 +157,7 @@ onMounted(async () => {
     </div>
 
     <HojaInferior v-model="hojaFiltros" titulo="Filtros">
-      <FiltrosOfertas :filtros="filtros" :profesiones="profesiones" :municipios="municipios" :modalidades="modalidades" @aplicar="aplicar()" />
+      <FiltrosOfertas :filtros="filtros" :profesiones="profesiones" :municipios="municipios" :modalidades="modalidades" :areas="areas" @aplicar="aplicar()" />
     </HojaInferior>
   </section>
 </template>

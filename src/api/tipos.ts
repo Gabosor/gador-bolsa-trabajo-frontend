@@ -1,6 +1,12 @@
 export interface ItemCatalogo {
   id: number
   nombre: string
+  /** Profesión: id de su área. */
+  parentId?: number | null
+  /** Habilidad: id de su área (null = general). */
+  areaId?: number | null
+  /** Viene en relaciones (oferta, perfil) para detectar las desactivadas. */
+  activo?: boolean
 }
 
 export interface Paginado<T> {
@@ -80,6 +86,7 @@ export interface Empresa {
   logoUrl?: string | null
   documentoNitUrl?: string | null
   documentoLegalUrl?: string | null
+  createdAt?: string
 }
 
 export type EstadoOferta =
@@ -119,4 +126,6 @@ export interface Oferta {
   totalPostulantes?: number
   empresa?: Empresa
   habilidades: HabilidadOferta[]
+  createdAt?: string
+  updatedAt?: string
 }

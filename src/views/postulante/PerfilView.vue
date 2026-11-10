@@ -6,16 +6,18 @@ import type { Experiencia, Formacion, ItemCatalogo, Perfil } from '@/api/tipos'
 import AccionBoton from '@/components/AccionBoton.vue'
 import BaseButton from '@/components/BaseButton.vue'
 import BaseInput from '@/components/BaseInput.vue'
-import BaseSelect from '@/components/BaseSelect.vue'
-import BaseTextarea from '@/components/BaseTextarea.vue'
+import EditorTexto from '@/components/EditorTexto.vue'
 import CargaArchivo from '@/components/CargaArchivo.vue'
 import EstadoVacio from '@/components/EstadoVacio.vue'
 import Esqueleto from '@/components/Esqueleto.vue'
 import Faja from '@/components/Faja.vue'
 import HojaInferior from '@/components/HojaInferior.vue'
 import SeccionPlegable from '@/components/SeccionPlegable.vue'
+import SelectorBuscable from '@/components/SelectorBuscable.vue'
+import TextoFormateado from '@/components/TextoFormateado.vue'
 import { useAvisosStore } from '@/stores/avisos'
 import { confirmar } from '@/utils/confirmar'
+import { agregarInactivas, habilidadesSugeridas, opcionesConArea } from '@/utils/catalogos'
 import { NIVELES_HABILIDAD, plural } from '@/utils/formato'
 
 const SECCION_DE_PENDIENTE: Record<string, string> = {
@@ -35,6 +37,9 @@ const avisos = useAvisosStore()
 const perfil = ref<Perfil | null>(null)
 const profesiones = ref<ItemCatalogo[]>([])
 const catalogoHabilidades = ref<ItemCatalogo[]>([])
+const areas = ref<ItemCatalogo[]>([])
+/** Cuántas sugerencias de habilidades se muestran. */
+const SUGERENCIAS_VISIBLES = 8
 const errorCarga = ref('')
 const subiendo = ref<'foto' | 'cv' | null>(null)
 const seccionAbierta = ref<string | null>(null)
@@ -42,7 +47,8 @@ const estadoGuardado = ref<'' | 'guardando' | 'guardado'>('')
 
 const datos = reactive({ direccion: '', fechaNacimiento: '' })
 const idiomas = ref<{ nombre: string; nivel: string }[]>([])
-const habilidades = ref<{ habilidadId: number; nivel: number }[]>([])
+/** `inactiva`: GADOR la desactivó; hay que quitarla para poder guardar. */
+const habilidades = ref<{ habilidadId: number; nivel: number; nombre: string; inactiva: boolean }[]>([])
 const habilidadNueva = ref<number | ''>('')
 
 const hojaFormacion = ref(false)
@@ -62,10 +68,24 @@ const puedePostular = computed(() => porcentaje.value > UMBRAL_POSTULAR)
 const pendientes = computed(() => perfil.value?.pendientes ?? [])
 const falta = (...claves: string[]) => pendientes.value.some((p) => claves.includes(p.clave))
 
-const nombreHabilidad = (id: number) => catalogoHabilidades.value.find((h) => h.id === id)?.nombre ?? ''
-const habilidadesDisponibles = computed(() =>
-  catalogoHabilidades.value.filter((h) => !habilidades.value.some((p) => p.habilidadId === h.id)),
+const idsHabilidades = computed(() => habilidades.value.map((h) => h.habilidadId))
+const opcionesHabilidad = computed(() => opcionesConArea(catalogoHabilidades.value, areas.value, 'areaId'))
+const opcionesProfesion = computed(() =>
+  agregarInactivas(
+    opcionesConArea(profesiones.value, areas.value, 'parentId'),
+    (perfil.value?.formaciones ?? []).map((f) => f.profesion),
+  ),
 )
+// Primero las habilidades del área de sus títulos y luego las generales.
+const sugeridas = computed(() =>
+  habilidadesSugeridas(
+    catalogoHabilidades.value,
+    profesiones.value,
+    (perfil.value?.formaciones ?? []).map((f) => f.profesion.id),
+    idsHabilidades.value,
+  ).slice(0, SUGERENCIAS_VISIBLES),
+)
+const hayInactivas = computed(() => habilidades.value.some((h) => h.inactiva))
 const opcionesNivelIdioma = (actual: string) =>
   actual && !NIVELES_IDIOMA.includes(actual) ? [actual, ...NIVELES_IDIOMA] : NIVELES_IDIOMA
 
@@ -77,7 +97,12 @@ async function recargar(copiarFormularios = false) {
   datos.direccion = p.direccion ?? ''
   datos.fechaNacimiento = p.fechaNacimiento ?? ''
   idiomas.value = p.idiomas.map((i) => ({ ...i }))
-  habilidades.value = p.habilidades.map((h) => ({ habilidadId: h.habilidad.id, nivel: h.nivel }))
+  habilidades.value = p.habilidades.map((h) => ({
+    habilidadId: h.habilidad.id,
+    nivel: h.nivel,
+    nombre: h.habilidad.nombre,
+    inactiva: h.habilidad.activo === false,
+  }))
 }
 
 async function ejecutar(accion: () => Promise<unknown>, mensaje?: string) {
@@ -109,13 +134,19 @@ function programarGuardado() {
 }
 
 function guardarHabilidades() {
-  return ejecutar(() => api('/postulantes/perfil/habilidades', { method: 'PUT', body: { habilidades: habilidades.value } }))
+  // Con una habilidad desactivada el servidor rechaza toda la lista: se espera a que la quite.
+  if (hayInactivas.value) {
+    avisos.error('Quita las habilidades que ya no están disponibles para guardar los cambios.')
+    return
+  }
+  const cuerpo = habilidades.value.map(({ habilidadId, nivel }) => ({ habilidadId, nivel }))
+  return ejecutar(() => api('/postulantes/perfil/habilidades', { method: 'PUT', body: { habilidades: cuerpo } }))
 }
 
-function agregarHabilidad() {
-  if (habilidadNueva.value === '') return
-  habilidades.value.push({ habilidadId: habilidadNueva.value, nivel: 1 })
-  habilidadNueva.value = ''
+function agregarHabilidad(habilidadId: number) {
+  const habilidad = catalogoHabilidades.value.find((h) => h.id === habilidadId)
+  if (!habilidad || idsHabilidades.value.includes(habilidadId)) return
+  habilidades.value.push({ habilidadId, nivel: 1, nombre: habilidad.nombre, inactiva: false })
   guardarHabilidades()
 }
 
@@ -211,9 +242,11 @@ async function irA(clave: string) {
 
 onMounted(async () => {
   try {
-    ;[profesiones.value, catalogoHabilidades.value] = await Promise.all([
+    ;[profesiones.value, catalogoHabilidades.value, areas.value] = await Promise.all([
       api<ItemCatalogo[]>('/catalogos/PROFESION'),
       api<ItemCatalogo[]>('/catalogos/habilidades'),
+      // Con un backend sin áreas, los selectores funcionan igual, sin grupos.
+      api<ItemCatalogo[]>('/catalogos/AREA').catch(() => []),
     ])
     await recargar(true)
     const primero = pendientes.value[0]?.clave
@@ -311,7 +344,7 @@ onMounted(async () => {
           <div class="min-w-0 flex-1">
             <p class="font-semibold break-words">{{ x.cargo }}</p>
             <p class="break-words text-roca">{{ x.empresa }}, {{ plural(x.anios, 'año') }}</p>
-            <p class="mt-1 break-words whitespace-pre-line">{{ x.descripcion }}</p>
+            <TextoFormateado class="mt-1" :texto="x.descripcion" />
           </div>
           <AccionBoton variante="texto" :aria-label="`Editar ${x.cargo}`" @click="abrirExperiencia(x)"><Pencil class="size-5" aria-hidden="true" /></AccionBoton>
           <AccionBoton variante="texto" :aria-label="`Eliminar ${x.cargo}`" @click="eliminar('experiencias', x.id, x.cargo)"><Trash2 class="size-5" aria-hidden="true" /></AccionBoton>
@@ -325,10 +358,13 @@ onMounted(async () => {
       <ul v-if="habilidades.length" class="mb-4 divide-y divide-linea">
         <li v-for="(h, i) in habilidades" :key="h.habilidadId" class="py-3 first:pt-0">
           <div class="mb-2 flex items-center justify-between gap-2">
-            <p class="min-w-0 font-semibold break-words">{{ nombreHabilidad(h.habilidadId) }}</p>
-            <AccionBoton variante="texto" :aria-label="`Quitar ${nombreHabilidad(h.habilidadId)}`" @click="quitarHabilidad(i)"><Trash2 class="size-5" aria-hidden="true" /></AccionBoton>
+            <p class="min-w-0 font-semibold break-words">
+              {{ h.nombre }}
+              <span v-if="h.inactiva" class="block text-sm font-normal text-error">Ya no está disponible. Quítala para poder guardar cambios en tus habilidades.</span>
+            </p>
+            <AccionBoton variante="texto" :aria-label="`Quitar ${h.nombre}`" @click="quitarHabilidad(i)"><Trash2 class="size-5" aria-hidden="true" /></AccionBoton>
           </div>
-          <div class="grid grid-cols-3 overflow-hidden rounded-campo border border-roca" role="radiogroup" :aria-label="`Nivel de ${nombreHabilidad(h.habilidadId)}`">
+          <div v-if="!h.inactiva" class="grid grid-cols-3 overflow-hidden rounded-campo border border-roca" role="radiogroup" :aria-label="`Nivel de ${h.nombre}`">
             <button
               v-for="n in NIVELES_HABILIDAD"
               :key="n.id"
@@ -344,10 +380,26 @@ onMounted(async () => {
           </div>
         </li>
       </ul>
-      <form class="flex items-end gap-2" @submit.prevent="agregarHabilidad">
-        <div class="min-w-0 flex-1"><BaseSelect v-model="habilidadNueva" label="Agregar habilidad" :opciones="habilidadesDisponibles" /></div>
-        <AccionBoton type="submit" variante="primario" class="min-h-12!" aria-label="Agregar habilidad"><Plus class="size-5" aria-hidden="true" /></AccionBoton>
-      </form>
+      <div v-if="sugeridas.length" class="mb-3">
+        <p class="mb-2 text-base font-semibold">{{ perfil.formaciones.length ? 'Sugeridas para tu formación' : 'Habilidades generales' }}</p>
+        <ul class="flex flex-wrap gap-2">
+          <li v-for="s in sugeridas" :key="s.id">
+            <button type="button" class="inline-flex min-h-11 items-center gap-1 rounded-full border border-roca bg-white px-3.5 hover:border-guinda-700 hover:bg-guinda-50" :aria-label="`Agregar ${s.nombre}`" @click="agregarHabilidad(s.id)">
+              <Plus class="size-4" aria-hidden="true" />{{ s.nombre }}
+            </button>
+          </li>
+        </ul>
+      </div>
+      <SelectorBuscable
+        v-model="habilidadNueva"
+        label="Agregar habilidad"
+        :opciones="opcionesHabilidad"
+        :excluir="idsHabilidades"
+        texto-sin-grupo="Generales"
+        opcional
+        limpiar-al-elegir
+        @elegir="agregarHabilidad"
+      />
     </SeccionPlegable>
 
     <SeccionPlegable id="idiomas" titulo="Idiomas" :completa="!falta('idiomas')" :abierta="seccionAbierta === 'idiomas'" :resumen="idiomas.map((i) => i.nombre).filter(Boolean).join(', ') || 'Castellano, quechua, aimara, inglés…'">
@@ -370,7 +422,7 @@ onMounted(async () => {
 
     <HojaInferior v-model="hojaFormacion" :titulo="formacionId ? 'Editar formación' : 'Agregar formación'">
       <form class="space-y-4" @submit.prevent="guardarFormacion">
-        <BaseSelect v-model="formacion.profesionId" label="Título" :opciones="profesiones" />
+        <SelectorBuscable v-model="formacion.profesionId" label="Título" :opciones="opcionesProfesion" texto-sin-grupo="Otras profesiones" />
         <BaseInput v-model="formacion.institucion" label="Universidad o instituto" />
         <BaseInput v-model="formacion.anioTitulacion" label="Año de titulación" type="number" inputmode="numeric" min="1950" :max="anioActual" />
         <BaseInput v-model="formacion.nroTituloNacional" label="Número de Título Nacional" />
@@ -383,7 +435,7 @@ onMounted(async () => {
         <BaseInput v-model="experiencia.cargo" label="Cargo" />
         <BaseInput v-model="experiencia.empresa" label="Empresa" />
         <BaseInput v-model="experiencia.anios" label="Años en el cargo" type="number" inputmode="numeric" min="0" max="60" />
-        <BaseTextarea v-model="experiencia.descripcion" label="Qué hacías" ayuda="Tus funciones y logros principales." />
+        <EditorTexto v-model="experiencia.descripcion" label="Qué hacías" :minlength="5" :maxlength="3000" ayuda="Tus funciones y logros principales." />
         <BaseButton :cargando="guardandoHoja" texto-cargando="Guardando…">Guardar experiencia</BaseButton>
       </form>
     </HojaInferior>
