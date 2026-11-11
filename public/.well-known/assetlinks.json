@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.sis_inf.bolsagador.twa",
+      "sha256_cert_fingerprints": [
+        "A1:51:60:F2:BD:20:6B:F2:8E:5B:DE:C9:2E:FB:8B:87:86:37:AF:D7:21:6D:1C:D2:88:8B:3B:4D:05:BF:0B:9D"
+      ]
+    }
+  }
+]
